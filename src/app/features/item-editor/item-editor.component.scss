@@ -2,3 +2,6 @@
 .editor-card{padding:20px}
 .end{justify-content:flex-end}
 quill-editor{display:block}
+.upload-status{min-height:1.2em;margin:0 0 8px;font-size:.85rem}
+.upload-status:empty{min-height:0;margin:0}
+:host ::ng-deep .ql-editor img{max-width:100%;height:auto}

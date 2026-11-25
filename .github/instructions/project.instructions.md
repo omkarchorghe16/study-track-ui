@@ -27,7 +27,12 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
 
 - Modals use `DialogComponent` (native `<dialog>`: focus trap, Escape, backdrop); confirm destructive
   actions with `ConfirmDialogComponent`. Shared button, field and badge classes live in `src/styles.scss`.
-- Render stored HTML only through `RichContentComponent`; never bypass sanitization.
+- Render stored HTML only through `RichContentComponent`, which cleans it with DOMPurify before
+  trusting it; never call `bypassSecurityTrustHtml` anywhere else. Keep its allowed tags in step with
+  the API's `HtmlSanitizer`. Its styles are unencapsulated (inserted HTML has no scoping attributes), so
+  every selector there starts with `app-rich-content`.
+- Editors that accept images use `mediaEditorModules` (`shared/editor/quill-media.ts`): images are
+  uploaded through `MediaService` and referenced as `/api/v1/media/{id}`, never base64.
 - Rich text uses ngx-quill (`format="html"` with the editor's `valueGetter`, see `ItemEditorComponent`).
   Quill's theme CSS is a global style in `angular.json`; `quill-delta` is an allowed CommonJS dependency.
 - Reference pages: `SubjectsComponent` (list + dialog), `SubjectDetailComponent` (two panes, selection

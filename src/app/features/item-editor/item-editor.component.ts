@@ -1,21 +1,24 @@
-import { Component, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { QuillEditorComponent, QuillModules } from 'ngx-quill';
+import { QuillEditorComponent } from 'ngx-quill';
 import type Quill from 'quill';
-import { Observable, map, switchMap } from 'rxjs';
+import { Observable, concatMap, finalize, from, map, switchMap } from 'rxjs';
 import { DIFFICULTIES, Difficulty, ITEM_TYPES, ItemRequest, ItemType, StudyItem } from '../../core/models/item.models';
 import { TopicOption, flattenTopics } from '../../core/models/topic.models';
+import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '../../core/models/media.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
+import { MediaService } from '../../core/services/media.service';
 import { TopicsService } from '../../core/services/topics.service';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
+import { mediaEditorModules } from '../../shared/editor/quill-media';
 
-const TOOLBAR: QuillModules['toolbar'] = [
+const TOOLBAR = [
   ['bold', 'italic', 'underline', 'strike'],
   [{ header: 2 }, { header: 3 }],
   [{ list: 'ordered' }, { list: 'bullet' }],
-  ['blockquote', 'code-block', 'link'],
+  ['blockquote', 'code-block', 'link', 'image'],
   ['clean'],
 ];
 
@@ -36,6 +39,11 @@ function readEditorHtml(editor: Quill): string | null {
   return toStoredHtml(editor.getSemanticHTML().replace(/&nbsp;/g, ' '));
 }
 
+/** Alt text from a file name: "binary-tree_diagram.png" becomes "binary tree diagram". */
+function altTextFor(file: File): string {
+  return file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim().slice(0, 500);
+}
+
 function parseTags(text: string): string[] {
   return [...new Set(text.split(',').map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length > 0))];
 }
@@ -51,6 +59,7 @@ function parseTags(text: string): string[] {
 export class ItemEditorComponent {
   private readonly itemsService = inject(ItemsService);
   private readonly topicsService = inject(TopicsService);
+  private readonly mediaService = inject(MediaService);
   private readonly router = inject(Router);
 
   /** Route parameter :id when editing. */
@@ -60,13 +69,19 @@ export class ItemEditorComponent {
 
   protected readonly itemTypes = ITEM_TYPES;
   protected readonly difficulties = DIFFICULTIES;
-  protected readonly modules: QuillModules = { toolbar: TOOLBAR };
+  protected readonly modules = mediaEditorModules(TOOLBAR, (quill, index, files) => this.uploadImages(quill, index, files));
   protected readonly readEditorHtml = readEditorHtml;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly saveError = signal<string | null>(null);
   protected readonly saving = signal(false);
+  protected readonly uploadsInProgress = signal(0);
+  protected readonly uploadError = signal<string | null>(null);
+  protected readonly uploadStatus = computed(() => {
+    const count = this.uploadsInProgress();
+    return count === 0 ? '' : `Uploading ${count} image${count === 1 ? '' : 's'}…`;
+  });
   protected readonly subjectId = signal<number | null>(null);
   protected readonly topicOptions = signal<TopicOption[]>([]);
 
@@ -100,7 +115,7 @@ export class ItemEditorComponent {
 
   protected save(): void {
     const title = this.title.trim();
-    if (!title || this.selectedTopicId === null || this.saving()) {
+    if (!title || this.selectedTopicId === null || this.saving() || this.uploadsInProgress() > 0) {
       this.saveError.set(!title ? 'Enter a title.' : this.saveError());
       return;
     }
@@ -129,6 +144,33 @@ export class ItemEditorComponent {
         this.saving.set(false);
         this.saveError.set(apiErrorMessage(error, 'Could not save the item.'));
       },
+    });
+  }
+
+  /**
+   * Uploads images one by one and inserts each at the next position, so they keep their order.
+   * Files the API would refuse (type or size) are reported without a request.
+   */
+  private uploadImages(quill: Quill, index: number, files: File[]): void {
+    const accepted = files.filter((file) => IMAGE_TYPES.includes(file.type) && file.size <= MAX_IMAGE_BYTES);
+    const refused = files.length - accepted.length;
+    this.uploadError.set(refused === 0 ? null
+      : `${refused === 1 ? 'One file was' : `${refused} files were`} not added: use PNG, JPEG, GIF or WebP images up to 5 MB.`);
+    let position = index;
+    this.uploadsInProgress.update((count) => count + accepted.length);
+    from(accepted).pipe(
+      concatMap((file) => this.mediaService.uploadImage(file, altTextFor(file)).pipe(
+        finalize(() => this.uploadsInProgress.update((count) => count - 1)))),
+    ).subscribe({
+      next: (media) => {
+        quill.insertEmbed(position, 'image', media.url, 'user');
+        if (media.altText) {
+          quill.formatText(position, 1, 'alt', media.altText, 'user');
+        }
+        position += 1;
+        quill.setSelection(position, 'silent');
+      },
+      error: (error: unknown) => this.uploadError.set(apiErrorMessage(error, 'Could not upload the image.')),
     });
   }
 

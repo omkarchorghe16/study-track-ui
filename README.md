@@ -9,8 +9,9 @@ The build plan is in that repository's `docs/BUILD_PLAN.md`.
 
 ## Status
 
-Phases 1 and 2 are done: the shell and dev proxy, an API connection card on the dashboard, and the
-subjects, topic tree, item list, item reading view and Quill item editor. Pages from later phases show a
+Phases 1 to 3 are done: the shell and dev proxy, an API connection card on the dashboard, the
+subjects, topic tree, item list, item reading view and Quill item editor, and images and highlighted code
+in items. Pages from later phases show a
 placeholder naming the phase that builds them.
 
 ## Screens
@@ -21,7 +22,7 @@ placeholder naming the phase that builds them.
 | `/subjects` | Subject cards (icon, description, topic and item counts) with create, edit, archive and delete | live |
 | `/subjects/:id?topic=` | Topic tree (add, rename, move, delete topics) and the selected topic's items, filtered by difficulty and tag, 20 per page | live |
 | `/items/:id` | Reading view: question, answer, notes, tags, previous/next in the topic, edit and delete | live |
-| `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes; title, type, difficulty, topic and tags | live |
+| `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes (images by button, paste or drop); title, type, difficulty, topic and tags | live |
 | `/study/:subjectId` | Flashcards | placeholder (phase 4) |
 | `/import` | Import wizard | placeholder (phase 5) |
 | `/settings` | LLM provider and theme | placeholder (phase 5) |
@@ -41,8 +42,13 @@ Start `study-track-api` first (see its README). If it is not running, the dashbo
 
 ## Notes
 
-- Stored HTML is rendered by `RichContentComponent` through Angular's built-in sanitizer. Phase 3 adds
-  DOMPurify, server-side sanitising, images and code highlighting.
+- Images are uploaded to `POST /api/v1/media` (`MediaService`) and stored in the HTML as
+  `<img src="/api/v1/media/{id}">`, never base64. `shared/editor/quill-media.ts` wires Quill's image button,
+  its uploader (pasted and dropped files) and a paste filter that drops base64 and external images.
+  PNG, JPEG, GIF and WebP up to 5 MB; other files get a message without a request.
+- Stored HTML is rendered only by `RichContentComponent`: DOMPurify (same rules as the API's jsoup
+  sanitiser, images only from `/api/v1/media/`), then highlight.js on code blocks (theme `github-dark`,
+  a global style in `angular.json`). The API also sanitises every save.
 - Quill 2 writes spaces as `&nbsp;`; the editor's `valueGetter` turns them back into spaces so answers wrap.
 - Empty editors are saved as `null`, so an unanswered question shows "No answer yet".
 
@@ -59,11 +65,12 @@ npm run typecheck         # strict tsc with --noUnusedLocals --noUnusedParameter
 
 ```
 src/app/
-  core/models/       typed API payloads and tree helpers (subject, topic, item, status)
-  core/services/     one HTTP service per API area (subjects, topics, items, status), api-error.ts
+  core/models/       typed API payloads and tree helpers (subject, topic, item, media, status)
+  core/services/     one HTTP service per API area (subjects, topics, items, media, status), api-error.ts
   features/          routed pages: dashboard/, subjects/, subject-detail/, item-view/, item-editor/
   shared/components/ shell/, dialog/ (native <dialog>), confirm-dialog/, topic-tree/, rich-content/,
                      coming-soon/ (placeholder for later phases)
+  shared/editor/     Quill image upload and paste handling (quill-media.ts)
 ```
 
 Rules for contributors and Claude Code are in `CLAUDE.md` and `.github/`; shared rules come from
