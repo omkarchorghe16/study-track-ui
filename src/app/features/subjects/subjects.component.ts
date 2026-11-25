@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Subject } from '../../core/models/subject.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { SubjectsService } from '../../core/services/subjects.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProgressBarComponent } from '../../shared/components/progress-bar/progress-bar.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
@@ -88,6 +89,7 @@ import { SubjectDialogComponent } from './subject-dialog.component';
 })
 export class SubjectsComponent {
   private readonly subjectsService = inject(SubjectsService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly subjects = signal<Subject[]>([]);
   protected readonly loading = signal(true);
@@ -131,6 +133,7 @@ export class SubjectsComponent {
   }
 
   protected onSaved(): void {
+    this.toastService.showSuccess(this.editing() ? 'Subject saved.' : 'Subject created.');
     this.dialogOpen.set(false);
     this.loadSubjects();
   }
@@ -151,6 +154,7 @@ export class SubjectsComponent {
         this.deleteBusy.set(false);
         this.deleting.set(null);
         this.subjects.update((subjects) => subjects.filter((each) => each.id !== subject.id));
+        this.toastService.showSuccess(`Subject “${subject.name}” deleted.`);
       },
       error: (error: unknown) => {
         this.deleteBusy.set(false);

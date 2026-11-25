@@ -93,8 +93,6 @@
         @if (candidatesLoading()) { <p class="text-muted" role="status">Loading candidates…</p> }
         @if (candidates().length) {
           <h2 class="section-heading">Review</h2>
-          @if (actionError()) { <p class="form-error" role="alert">{{ actionError() }}</p> }
-          <p class="text-muted" role="status" aria-live="polite">{{ actionMessage() }}</p>
           @if (openCandidates().length) {
             <div class="actions-row bulk-bar">
               <label class="check"><input type="checkbox" [checked]="allSelected()" (change)="toggleAll()"> Select all open</label>

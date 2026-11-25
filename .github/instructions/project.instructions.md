@@ -42,6 +42,13 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
   series, a tooltip on hover and keyboard focus, and a table view.
 - The resume point is saved (best effort, errors ignored) when an item opens and when a topic is
   selected. Rating-interval hints use `reviewIntervalDays`, which must match the API's `ReviewScheduler`.
+- Colours: use the CSS variables from `styles.scss`, never hex colours, so both themes work (semi-transparent
+  tints such as `#4b8cff1c` are fine). Add a new variable to both the `:root` and the
+  `:root[data-theme=light]` blocks.
+- Report the result of an action (save, delete, approve, a failed quick action) with `ToastService`; keep
+  load errors and form errors inline with `apiErrorMessage`.
+- Keyboard shortcuts (study mode) must ignore keys while typing in a field, with modifier keys, or inside
+  an open dialog, and be shown on the page and in `aria-keyshortcuts`.
 - Imports run in the background on the API. Poll `GET /imports/{id}` with an RxJS `timer` that stops
   when the job is no longer running and when the component is destroyed. Never ask for, store or show
   an LLM API key in the app; keys live only in the API's environment.
@@ -49,9 +56,9 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
 ## Routes and placeholders
 
 - Every route is lazy-loaded (`loadComponent`) in `app.routes.ts`.
-- A route whose page is not built yet points at `ComingSoonComponent` with `data: { heading, phase,
-  summary }`. When a phase builds the page, add `features/<feature>/<feature>.component.ts` and
-  point the route at it.
+- A route whose page is planned but not built yet points at `ComingSoonComponent` with `data: { heading,
+  phase, summary }` (none today). When a phase builds the page, add
+  `features/<feature>/<feature>.component.ts` and point the route at it.
 
 ## Models
 

@@ -22,7 +22,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
   styles: [`
     .ring{position:relative;width:132px;height:132px;flex:none}
     svg{width:100%;height:100%;transform:rotate(-90deg)}
-    circle{fill:none;stroke-width:10}.track{stroke:#ffffff14}
+    circle{fill:none;stroke-width:10}.track{stroke:var(--overlay-2)}
     .fill{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset .4s ease}.fill.complete{stroke:var(--positive)}
     .value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.9rem;font-weight:700;letter-spacing:-.03em}
     small{font-size:.9rem;color:var(--muted);margin-left:1px}

@@ -98,6 +98,22 @@ export interface ItemRequest {
   tags: string[];
 }
 
+/** Body of POST /items/duplicate-check; `itemId` is the item being edited, never reported. */
+export interface DuplicateCheckRequest {
+  topicId: number;
+  title: string;
+  questionHtml: string | null;
+  itemId: number | null;
+}
+
+/** An item of the same subject with the same question text. */
+export interface DuplicateItem {
+  id: number;
+  title: string;
+  topicId: number;
+  topicName: string;
+}
+
 export function itemTypeLabel(type: ItemType): string {
   return ITEM_TYPES.find((entry) => entry.value === type)?.label ?? type;
 }

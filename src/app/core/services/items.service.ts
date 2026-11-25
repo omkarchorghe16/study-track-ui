@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ItemFilters, ItemPage, ItemRequest, StudyItem } from '../models/item.models';
+import { DuplicateCheckRequest, DuplicateItem, ItemFilters, ItemPage, ItemRequest, StudyItem } from '../models/item.models';
 
 const ITEMS_URL = '/api/v1/items';
 
@@ -39,5 +39,10 @@ export class ItemsService {
 
   deleteItem(itemId: number): Observable<void> {
     return this.http.delete<void>(`${ITEMS_URL}/${itemId}`);
+  }
+
+  /** Items of the subject with the same question (or title, without a question). Nothing is saved. */
+  findDuplicateItems(request: DuplicateCheckRequest): Observable<DuplicateItem[]> {
+    return this.http.post<DuplicateItem[]>(`${ITEMS_URL}/duplicate-check`, request);
   }
 }

@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { LLM_PROVIDER_LABELS, LlmConnectionTest, LlmProvider, LlmProviderInfo, LlmSettingsRequest } from '../../core/models/llm-settings.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { SettingsService } from '../../core/services/settings.service';
+import { THEME_MODES, ThemeService } from '../../core/services/theme.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
 
 /**
@@ -19,7 +21,7 @@ import { ShellComponent } from '../../shared/components/shell/shell.component';
         <header class="page-header">
           <div>
             <h1>Settings</h1>
-            <p>Choose the LLM that reads your imported notes.</p>
+            <p>Choose the LLM that reads your imported notes, and light or dark colours.</p>
           </div>
         </header>
 
@@ -61,7 +63,6 @@ import { ShellComponent } from '../../shared/components/shell/shell.component';
             @if (testResult(); as result) {
               <p [class]="result.ok ? 'test-ok' : 'form-error'" role="status">{{ result.ok ? '✓' : '✕' }} {{ result.message }}</p>
             }
-            @if (savedMessage()) { <p class="test-ok" role="status">{{ savedMessage() }}</p> }
             <div class="actions-row">
               <button type="submit" class="btn btn-primary" [disabled]="saving() || !model.trim()">{{ saving() ? 'Saving…' : 'Save' }}</button>
               <button type="button" class="btn" [disabled]="testing() || !model.trim()" (click)="testConnection()">
@@ -69,20 +70,34 @@ import { ShellComponent } from '../../shared/components/shell/shell.component';
               </button>
             </div>
           </form>
-          <p class="text-muted note">Theme settings come with Phase 6.</p>
         }
+        <section class="card settings-card appearance" aria-labelledby="appearance-heading">
+          <h2 id="appearance-heading">Appearance</h2>
+          <fieldset class="theme-options">
+            <legend class="sr-only">Theme</legend>
+            @for (option of themeModes; track option.value) {
+              <label class="check"><input type="radio" name="theme" [value]="option.value" [checked]="themeService.mode() === option.value"
+                                          (change)="themeService.changeMode(option.value)"> {{ option.label }}</label>
+            }
+          </fieldset>
+          <p class="text-muted note">Saved in this browser.</p>
+        </section>
       </section>
     </app-shell>
   `,
   styles: [`
     .settings-card{max-width:640px;padding:18px}h2{margin:0 0 14px;font-size:1rem}
-    .key-status{margin:0 0 14px;font-size:.8rem;color:#56d69c}.key-status.missing{color:#f2ca63}
+    .key-status{margin:0 0 14px;font-size:.8rem;color:var(--positive-text)}.key-status.missing{color:var(--warning-text)}
     .check{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:.84rem}
-    .test-ok{color:#56d69c;font-size:.82rem}.note{font-size:.78rem}
+    .test-ok{color:var(--positive-text);font-size:.82rem}.note{margin:0;font-size:.78rem}
+    .appearance{margin-top:18px}.theme-options{display:flex;flex-wrap:wrap;gap:6px 20px;margin:0 0 10px;padding:0;border:0}
   `],
 })
 export class SettingsComponent {
   private readonly settingsService = inject(SettingsService);
+  private readonly toastService = inject(ToastService);
+  protected readonly themeService = inject(ThemeService);
+  protected readonly themeModes = THEME_MODES;
 
   protected readonly providerLabels = LLM_PROVIDER_LABELS;
   protected readonly loading = signal(true);
@@ -100,7 +115,6 @@ export class SettingsComponent {
 
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
-  protected readonly savedMessage = signal<string | null>(null);
   protected readonly testing = signal(false);
   protected readonly testResult = signal<LlmConnectionTest | null>(null);
 
@@ -134,7 +148,6 @@ export class SettingsComponent {
     this.model = info?.defaultModel ?? '';
     this.baseUrl = info?.defaultBaseUrl ?? '';
     this.testResult.set(null);
-    this.savedMessage.set(null);
   }
 
   protected save(): void {
@@ -143,13 +156,12 @@ export class SettingsComponent {
     }
     this.saving.set(true);
     this.saveError.set(null);
-    this.savedMessage.set(null);
     this.settingsService.replaceLlmSettings(this.buildRequest()).subscribe({
       next: (settings) => {
         this.saving.set(false);
         this.model = settings.model;
         this.baseUrl = settings.baseUrl;
-        this.savedMessage.set('Settings saved.');
+        this.toastService.showSuccess('LLM settings saved.');
       },
       error: (error: unknown) => {
         this.saving.set(false);

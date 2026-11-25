@@ -8,7 +8,7 @@ charcoal/dark surfaces, restrained borders, muted gray text, bright blue actions
 warm-yellow accents.
 
 The app talks only to `study-track-api` (port 8083) through relative `/api/...` paths served by the
-dev proxy. Pages not built yet show a placeholder naming the phase that builds them.
+dev proxy. Every page in the build plan up to Phase 6 is built; Phase 7 (accounts) is not started.
 
 ## Rules
 

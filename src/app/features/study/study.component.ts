@@ -22,6 +22,7 @@ const CARDS_PER_SESSION = 100;
   imports: [ShellComponent, RouterLink, RichContentComponent, ProgressBarComponent],
   templateUrl: './study.component.html',
   styleUrl: './study.component.scss',
+  host: { '(document:keydown)': 'onKeydown($event)' },
 })
 export class StudyComponent {
   private readonly progressService = inject(ProgressService);
@@ -78,6 +79,30 @@ export class StudyComponent {
       });
   }
 
+  /**
+   * Space or Enter shows the answer; 1-4 rate it (Again, Hard, Good, Easy). Ignored while typing, with
+   * modifier keys, inside an open dialog, or when Enter/Space would press a focused button or link.
+   */
+  protected onKeydown(event: KeyboardEvent): void {
+    const card = this.current();
+    if (!card || event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) {
+      return;
+    }
+    if ((event.key === ' ' || event.key === 'Enter') && !this.revealed()) {
+      if (isPressableTarget(event.target)) {
+        return;
+      }
+      event.preventDefault();
+      this.revealed.set(true);
+      return;
+    }
+    const resultIndex = ['1', '2', '3', '4'].indexOf(event.key);
+    if (resultIndex >= 0 && this.revealed() && !this.rating()) {
+      event.preventDefault();
+      this.rate(this.results[resultIndex].value);
+    }
+  }
+
   protected intervalLabel(result: ReviewResult, card: DueItem): string {
     const days = reviewIntervalDays(result, card.reviewCount);
     return days === 1 ? '1 day' : `${days} days`;
@@ -106,4 +131,13 @@ export class StudyComponent {
       },
     });
   }
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement
+    && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || !!target.closest('dialog[open]'));
+}
+
+function isPressableTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && !!target.closest('button, a[href], summary');
 }

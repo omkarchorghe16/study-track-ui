@@ -5,3 +5,5 @@ quill-editor{display:block}
 .upload-status{min-height:1.2em;margin:0 0 8px;font-size:.85rem}
 .upload-status:empty{min-height:0;margin:0}
 :host ::ng-deep .ql-editor img{max-width:100%;height:auto}
+.duplicate-warning{margin:0 0 14px;padding:12px 14px;border:1px solid #f2ca6366;border-radius:7px;background:#f2ca6314;font-size:.82rem}
+.duplicate-warning p{margin:0 0 6px}.duplicate-warning ul{margin:0 0 10px;padding-left:18px}.duplicate-warning a{color:var(--info-text);text-decoration:underline}

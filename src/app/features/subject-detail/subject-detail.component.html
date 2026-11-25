@@ -59,7 +59,6 @@
                 @if (topic.allItemsDone && !topic.completed) { · every item is done, you can mark the topic complete }</span>
             </div>
           }
-          @if (completionError()) { <p class="load-error" role="alert">{{ completionError() }}</p> }
 
           <form class="filters" (ngSubmit)="applyFilters()" aria-label="Filter items">
             <label class="field"><span>Status</span>
@@ -99,6 +98,12 @@
                 <p>{{ statusFilter || difficultyFilter || tagFilter ? 'No items match these filters.' : 'No items in this topic yet.' }}</p>
                 @if (topic.children.length && topic.totalItemCount > topic.itemCount) {
                   <p>Its subtopics hold {{ topic.totalItemCount - topic.itemCount }} items.</p>
+                }
+                @if (!statusFilter && !difficultyFilter && !tagFilter) {
+                  <div class="actions-row empty-actions">
+                    <a class="btn btn-primary btn-small" routerLink="/items/new" [queryParams]="{ topicId: topic.id }">＋ New item</a>
+                    <a class="btn btn-small" routerLink="/import">Import notes</a>
+                  </div>
                 }
               </div>
             } @else {

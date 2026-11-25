@@ -17,7 +17,10 @@
       @if (stats.totalItems === 0) {
         <div class="card empty-state">
           <p>Nothing to track yet. Create a subject, add topics and questions, and your progress shows up here.</p>
-          <a class="btn btn-primary" routerLink="/subjects">Go to subjects</a>
+          <div class="actions-row empty-actions">
+            <a class="btn btn-primary" routerLink="/subjects">Go to subjects</a>
+            <a class="btn" routerLink="/import">Import notes</a>
+          </div>
         </div>
       } @else {
         <div class="top-grid">
