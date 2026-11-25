@@ -1,21 +1,26 @@
 import { Component, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { StudyItem, difficultyLabel, itemTypeLabel } from '../../core/models/item.models';
+import { ItemProgress, StudyItem, difficultyLabel, itemTypeLabel } from '../../core/models/item.models';
 import { flattenTopics } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
+import { ProgressService } from '../../core/services/progress.service';
 import { SubjectsService } from '../../core/services/subjects.service';
 import { TopicsService } from '../../core/services/topics.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { RichContentComponent } from '../../shared/components/rich-content/rich-content.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
+import { ItemProgressPanelComponent } from './item-progress-panel.component';
 
-/** Reading view of one item, with previous/next in its topic. Status buttons arrive in phase 4. */
+/**
+ * Reading view of one item: progress controls, question, answer and notes, previous/next in its topic.
+ * Opening an item saves it as the subject's resume point.
+ */
 @Component({
   selector: 'app-item-view',
   standalone: true,
-  imports: [ShellComponent, RouterLink, RichContentComponent, ConfirmDialogComponent],
+  imports: [ShellComponent, RouterLink, RichContentComponent, ConfirmDialogComponent, ItemProgressPanelComponent],
   template: `
     <app-shell>
       <article class="page-shell item-page">
@@ -42,6 +47,8 @@ import { ShellComponent } from '../../shared/components/shell/shell.component';
               <button type="button" class="btn btn-danger" (click)="confirmingDelete.set(true)">Delete</button>
             </div>
           </header>
+
+          <app-item-progress-panel [itemId]="item.id" [progress]="item.progress" (changed)="onProgressChanged($event)"></app-item-progress-panel>
 
           @if (item.questionHtml) {
             <section class="card block" aria-labelledby="question-heading">
@@ -87,6 +94,7 @@ import { ShellComponent } from '../../shared/components/shell/shell.component';
 })
 export class ItemViewComponent {
   private readonly itemsService = inject(ItemsService);
+  private readonly progressService = inject(ProgressService);
   private readonly subjectsService = inject(SubjectsService);
   private readonly topicsService = inject(TopicsService);
   private readonly router = inject(Router);
@@ -119,6 +127,10 @@ export class ItemViewComponent {
     });
   }
 
+  protected onProgressChanged(progress: ItemProgress): void {
+    this.item.update((item) => (item ? { ...item, progress } : item));
+  }
+
   protected deleteItem(): void {
     const item = this.item();
     if (!item) {
@@ -144,6 +156,8 @@ export class ItemViewComponent {
       next: (item) => {
         this.item.set(item);
         this.loadNames(item.subjectId);
+        // Best effort: a failed save only means "Continue" points at the previous place.
+        this.progressService.saveResumePoint(item.subjectId, item.topicId, item.id).subscribe({ error: () => undefined });
       },
       error: (error: unknown) => this.loadError.set(apiErrorMessage(error, 'Could not load this item.')),
     });

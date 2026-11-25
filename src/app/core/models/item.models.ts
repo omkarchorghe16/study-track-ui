@@ -1,5 +1,25 @@
 export type ItemType = 'QUESTION' | 'NOTE' | 'EXAMPLE' | 'DIAGRAM';
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+/** The current user's study status for an item; items never touched are NOT_STARTED. */
+export type ItemStatus = 'NOT_STARTED' | 'LEARNING' | 'DONE';
+
+export const ITEM_STATUSES: readonly { value: ItemStatus; label: string }[] = [
+  { value: 'NOT_STARTED', label: 'Not started' },
+  { value: 'LEARNING', label: 'Learning' },
+  { value: 'DONE', label: 'Done' },
+];
+
+/** The current user's progress on one item (also the response of PATCH /items/{id}/progress). */
+export interface ItemProgress {
+  status: ItemStatus;
+  /** 1 to 5, absent when not set. */
+  confidence?: number;
+  bookmarked: boolean;
+  reviewCount: number;
+  lastReviewedAt?: string;
+  /** Absent until the first flashcard review. */
+  nextReviewAt?: string;
+}
 
 export const ITEM_TYPES: readonly { value: ItemType; label: string }[] = [
   { value: 'QUESTION', label: 'Question' },
@@ -30,6 +50,7 @@ export interface StudyItem {
   sortOrder: number;
   previousItemId?: number;
   nextItemId?: number;
+  progress: ItemProgress;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +64,8 @@ export interface ItemSummary {
   tags: string[];
   sortOrder: number;
   hasAnswer: boolean;
+  status: ItemStatus;
+  bookmarked: boolean;
   updatedAt: string;
 }
 
@@ -56,6 +79,7 @@ export interface ItemPage {
 }
 
 export interface ItemFilters {
+  status?: ItemStatus | null;
   difficulty?: Difficulty | null;
   tag?: string | null;
   page?: number;
@@ -80,4 +104,8 @@ export function itemTypeLabel(type: ItemType): string {
 
 export function difficultyLabel(difficulty: Difficulty): string {
   return DIFFICULTIES.find((entry) => entry.value === difficulty)?.label ?? difficulty;
+}
+
+export function itemStatusLabel(status: ItemStatus): string {
+  return ITEM_STATUSES.find((entry) => entry.value === status)?.label ?? status;
 }

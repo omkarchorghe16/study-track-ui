@@ -24,6 +24,9 @@
 .actions-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .tag-chip{display:inline-flex;padding:3px 8px;border-radius:99px;background:#4b8cff1c;color:#9dc0ff;font-size:.7rem;font-weight:600}
 .badge.easy{background:#35be841c;color:#56d69c}.badge.medium{background:#f2ca631c;color:#f2ca63}.badge.hard{background:#eb707b1c;color:#f28a92}
+.btn-success{border-color:#35be8466;color:#56d69c;background:#35be8414}.btn-success:hover:not(:disabled){border-color:var(--positive);background:#35be8426}
+.status-pill{display:inline-flex;padding:3px 8px;border-radius:99px;border:1px solid var(--border);color:var(--muted);font-size:.7rem;font-weight:600}
+.status-pill.learning{border-color:#4b8cff55;color:#9dc0ff}.status-pill.done{border-color:#35be8466;color:#56d69c}
 dialog.app-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);box-shadow:0 20px 70px #0009}
 dialog.app-dialog::backdrop{background:#0009}
 .breadcrumbs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;color:var(--muted);font-size:.76rem}.breadcrumbs a{color:#9dc0ff}

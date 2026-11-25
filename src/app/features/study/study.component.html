@@ -1,0 +1,83 @@
+<app-shell>
+  <section class="page-shell study-page">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a routerLink="/subjects">Subjects</a><span aria-hidden="true">›</span>
+      <a [routerLink]="['/subjects', subjectId()]">{{ subjectName() ?? 'Subject' }}</a><span aria-hidden="true">›</span><span>Flashcards</span>
+    </nav>
+    <header class="page-header">
+      <div>
+        <h1>Flashcards</h1>
+        <p>Cards due today come first, then new ones. Rate each card honestly; the next review is scheduled from it.</p>
+      </div>
+    </header>
+
+    @if (loadError()) {
+      <p class="load-error" role="alert">{{ loadError() }} <button type="button" class="btn btn-small" (click)="load()">Retry</button></p>
+    } @else if (loading()) {
+      <p class="text-muted" role="status">Loading flashcards…</p>
+    } @else if (cards().length === 0) {
+      <div class="card empty-state">
+        <p>Nothing due today in this subject. Come back tomorrow, or add new items.</p>
+        <a class="btn" [routerLink]="['/subjects', subjectId()]">Back to the subject</a>
+      </div>
+    } @else if (finished()) {
+      <div class="card summary" role="status">
+        <h2>Session done</h2>
+        <p>You reviewed {{ reviewedCount() }} card{{ reviewedCount() === 1 ? '' : 's' }}@if (doneNow()) {, and {{ doneNow() }} became Done}.</p>
+        <ul class="tally">
+          @for (result of results; track result.value) {
+            <li class="result-{{ result.value.toLowerCase() }}"><strong>{{ tally()[result.value] }}</strong> {{ result.label }}</li>
+          }
+        </ul>
+        <div class="actions-row">
+          @if (hasMore()) { <button type="button" class="btn btn-primary" (click)="load()">Study more</button> }
+          <a class="btn" [routerLink]="['/subjects', subjectId()]">Back to the subject</a>
+          <a class="btn btn-ghost" routerLink="/dashboard">Dashboard</a>
+        </div>
+      </div>
+    } @else if (current(); as card) {
+      <div class="session-progress">
+        <span class="text-muted">Card {{ position() + 1 }} of {{ cards().length }}</span>
+        <app-progress-bar [value]="percent()" label="Session progress" suffix="of cards rated"></app-progress-bar>
+      </div>
+
+      <article class="card flashcard" aria-labelledby="card-title" aria-live="polite">
+        <p class="card-meta">
+          <span>{{ card.topicName }}</span>
+          <span class="badge" [class]="card.difficulty.toLowerCase()">{{ difficultyLabel(card.difficulty) }}</span>
+          @if (card.status === 'NOT_STARTED' && !card.reviewCount) { <span class="status-pill">New</span> }
+        </p>
+        <h2 id="card-title">{{ card.title }}</h2>
+        @if (card.questionHtml) {
+          <app-rich-content [html]="card.questionHtml"></app-rich-content>
+        }
+
+        @if (revealed()) {
+          <section class="answer" aria-labelledby="answer-heading">
+            <h3 id="answer-heading" class="eyebrow">Answer</h3>
+            <app-rich-content [html]="card.answerHtml" emptyText="No answer yet. Add one from the item page."></app-rich-content>
+            @if (card.notesHtml) {
+              <h3 class="eyebrow">Notes</h3>
+              <app-rich-content [html]="card.notesHtml"></app-rich-content>
+            }
+          </section>
+        }
+      </article>
+
+      @if (ratingError()) { <p class="form-error" role="alert">{{ ratingError() }}</p> }
+
+      @if (!revealed()) {
+        <button type="button" class="btn btn-primary reveal" (click)="revealed.set(true)">Show answer</button>
+      } @else {
+        <div class="ratings" role="group" aria-label="How well did you know it?">
+          @for (result of results; track result.value) {
+            <button type="button" class="btn rating result-{{ result.value.toLowerCase() }}" [disabled]="rating()" (click)="rate(result.value)">
+              <span>{{ result.label }}</span><small>{{ intervalLabel(result.value, card) }}</small>
+            </button>
+          }
+        </div>
+      }
+      <a class="item-link" [routerLink]="['/items', card.id]">Open the full item</a>
+    }
+  </section>
+</app-shell>

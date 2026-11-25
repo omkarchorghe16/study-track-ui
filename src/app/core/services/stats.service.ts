@@ -1,13 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiStatus } from '../models/status.models';
+import { StatsOverview } from '../models/stats.models';
 
 @Injectable({ providedIn: 'root' })
-export class StatusService {
+export class StatsService {
   private readonly http = inject(HttpClient);
 
-  getStatus(): Observable<ApiStatus> {
-    return this.http.get<ApiStatus>('/api/v1/status');
+  getOverview(): Observable<StatsOverview> {
+    return this.http.get<StatsOverview>('/api/v1/stats/overview');
   }
 }
