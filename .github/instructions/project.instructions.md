@@ -37,6 +37,11 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
   Quill's theme CSS is a global style in `angular.json`; `quill-delta` is an allowed CommonJS dependency.
 - Reference pages: `SubjectsComponent` (list + dialog), `SubjectDetailComponent` (two panes, selection
   in the query string), `ItemEditorComponent` (form with editors).
+- Show progress with `ProgressBarComponent` (role `progressbar`, labelled). Item status uses the global
+  `.status-pill` classes. Charts follow the dataviz rules: one hue for one series, no legend for a single
+  series, a tooltip on hover and keyboard focus, and a table view.
+- The resume point is saved (best effort, errors ignored) when an item opens and when a topic is
+  selected. Rating-interval hints use `reviewIntervalDays`, which must match the API's `ReviewScheduler`.
 
 ## Routes and placeholders
 

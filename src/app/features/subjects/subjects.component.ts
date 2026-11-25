@@ -4,14 +4,15 @@ import { Subject } from '../../core/models/subject.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { SubjectsService } from '../../core/services/subjects.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ProgressBarComponent } from '../../shared/components/progress-bar/progress-bar.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
 import { SubjectDialogComponent } from './subject-dialog.component';
 
-/** Subject cards with create, edit and delete. Progress percentages are added in phase 4. */
+/** Subject cards with progress, create, edit and delete. */
 @Component({
   selector: 'app-subjects',
   standalone: true,
-  imports: [ShellComponent, RouterLink, SubjectDialogComponent, ConfirmDialogComponent],
+  imports: [ShellComponent, RouterLink, SubjectDialogComponent, ConfirmDialogComponent, ProgressBarComponent],
   template: `
     <app-shell>
       <section class="page-shell">
@@ -42,8 +43,12 @@ import { SubjectDialogComponent } from './subject-dialog.component';
                   <span class="subject-name">{{ subject.name }}</span>
                 </a>
                 <p class="subject-description">{{ subject.description || '—' }}</p>
-                <p class="subject-counts">{{ subject.topicCount }} topics · {{ subject.itemCount }} items</p>
+                <p class="subject-counts">{{ subject.topicCount }} topics · {{ subject.itemCount }} items · {{ subject.percentDone }}% done</p>
+                <app-progress-bar [value]="subject.percentDone" [label]="subject.name + ' progress'"></app-progress-bar>
                 <div class="actions-row">
+                  @if (subject.itemCount) {
+                    <a class="btn btn-small btn-primary" [routerLink]="['/study', subject.id]" [attr.aria-label]="'Study ' + subject.name">Study</a>
+                  }
                   <button type="button" class="btn btn-small" [attr.aria-label]="'Edit ' + subject.name" (click)="openEdit(subject)">Edit</button>
                   <button type="button" class="btn btn-small btn-danger" [attr.aria-label]="'Delete ' + subject.name" (click)="askDelete(subject)">Delete</button>
                 </div>

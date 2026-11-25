@@ -13,6 +13,9 @@ export class ItemsService {
     let params = new HttpParams()
       .set('page', filters.page ?? 0)
       .set('size', filters.size ?? 20);
+    if (filters.status) {
+      params = params.set('status', filters.status);
+    }
     if (filters.difficulty) {
       params = params.set('difficulty', filters.difficulty);
     }

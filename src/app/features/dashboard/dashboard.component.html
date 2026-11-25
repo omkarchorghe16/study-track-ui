@@ -1,0 +1,98 @@
+<app-shell>
+  <section class="page-shell">
+    <header class="page-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p>Your progress, today's flashcards and where you left off.</p>
+      </div>
+      <button type="button" class="chip" (click)="load()" [disabled]="loading()">Refresh</button>
+    </header>
+
+    @if (loadError()) {
+      <p class="load-error" role="alert">{{ loadError() }} <button type="button" class="btn btn-small" (click)="load()">Retry</button></p>
+      <p class="text-muted api-hint">Check that study-track-api is running, or open its <a [href]="swaggerUrl" target="_blank" rel="noopener">Swagger UI<span class="sr-only"> (opens in a new tab)</span></a>.</p>
+    } @else if (loading() && !stats()) {
+      <p class="text-muted" role="status">Loading your progress…</p>
+    } @else if (stats(); as stats) {
+      @if (stats.totalItems === 0) {
+        <div class="card empty-state">
+          <p>Nothing to track yet. Create a subject, add topics and questions, and your progress shows up here.</p>
+          <a class="btn btn-primary" routerLink="/subjects">Go to subjects</a>
+        </div>
+      } @else {
+        <div class="top-grid">
+          <article class="card overall" aria-labelledby="overall-heading">
+            <h2 id="overall-heading" class="eyebrow">Overall progress</h2>
+            <div class="overall-body">
+              <app-progress-ring [value]="stats.percentDone"></app-progress-ring>
+              <dl class="legend">
+                <div><dt><span class="dot done" aria-hidden="true"></span>Done</dt><dd>{{ stats.doneItems }}</dd></div>
+                <div><dt><span class="dot learning" aria-hidden="true"></span>Learning</dt><dd>{{ stats.learningItems }}</dd></div>
+                <div><dt><span class="dot new" aria-hidden="true"></span>Not started</dt><dd>{{ stats.notStartedItems }}</dd></div>
+                <div><dt>Topics complete</dt><dd>{{ stats.completedTopics }} / {{ stats.totalTopics }}</dd></div>
+              </dl>
+            </div>
+          </article>
+
+          <article class="card continue" aria-labelledby="continue-heading">
+            <h2 id="continue-heading" class="eyebrow">Continue where you left off</h2>
+            @if (resume(); as resume) {
+              <p class="resume-subject">{{ resume.subjectIcon || '📘' }} {{ resume.subjectName }}</p>
+              <p class="resume-place">{{ resume.topicName ?? 'No topic opened yet' }}@if (resume.itemTitle) { › {{ resume.itemTitle }}}</p>
+              <a class="btn btn-primary" [routerLink]="continueLink(resume)" [queryParams]="continueQuery(resume)">Continue</a>
+            } @else {
+              <p class="text-muted">Open an item and it will be waiting here next time.</p>
+              <a class="btn" routerLink="/subjects">Browse subjects</a>
+            }
+          </article>
+
+          <article class="card today" aria-labelledby="today-heading">
+            <h2 id="today-heading" class="eyebrow">Today</h2>
+            <div class="today-numbers">
+              <p><strong>{{ stats.dueToday }}</strong><span>due</span></p>
+              <p><strong>{{ stats.newItems }}</strong><span>new</span></p>
+              <p><strong>{{ stats.currentStreakDays }}</strong><span>day streak</span></p>
+            </div>
+            <p class="text-muted small">{{ stats.reviewsToday }} reviewed today · best streak {{ stats.longestStreakDays }} day{{ stats.longestStreakDays === 1 ? '' : 's' }}</p>
+            @if (subjectsToStudy().length) {
+              <ul class="study-list">
+                @for (subject of subjectsToStudy(); track subject.id) {
+                  <li>
+                    <span>{{ subject.icon || '📘' }} {{ subject.name }}</span>
+                    <a class="btn btn-small btn-primary" [routerLink]="['/study', subject.id]" [attr.aria-label]="'Study ' + subject.name + ': ' + subject.dueCount + ' due, ' + subject.newCount + ' new'">
+                      Study {{ subject.dueCount + subject.newCount }}
+                    </a>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="text-muted small">All caught up. New cards appear as reviews come due.</p>
+            }
+          </article>
+        </div>
+
+        <div class="bottom-grid">
+          <article class="card" aria-labelledby="subjects-heading">
+            <h2 id="subjects-heading" class="eyebrow">Subjects</h2>
+            <ul class="subject-progress">
+              @for (subject of activeSubjects(); track subject.id) {
+                <li>
+                  <div class="subject-line">
+                    <a [routerLink]="['/subjects', subject.id]">{{ subject.icon || '📘' }} {{ subject.name }}</a>
+                    <span class="text-muted">{{ subject.doneItemCount }} / {{ subject.itemCount }} · {{ subject.percentDone }}%</span>
+                  </div>
+                  <app-progress-bar [value]="subject.percentDone" [label]="subject.name + ' progress'"></app-progress-bar>
+                </li>
+              }
+            </ul>
+          </article>
+
+          <article class="card" aria-labelledby="activity-heading">
+            <h2 id="activity-heading" class="eyebrow">Flashcard reviews, last 30 days</h2>
+            <app-activity-chart [days]="stats.reviewsPerDay"></app-activity-chart>
+          </article>
+        </div>
+      }
+    }
+  </section>
+</app-shell>

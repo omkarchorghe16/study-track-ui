@@ -7,7 +7,13 @@ export interface Subject {
   sortOrder: number;
   archived: boolean;
   topicCount: number;
+  /** Topics the user marked complete. */
+  completedTopicCount: number;
   itemCount: number;
+  doneItemCount: number;
+  learningItemCount: number;
+  /** DONE items as a whole percent, rounded down (100 only when every item is done). */
+  percentDone: number;
   createdAt: string;
   updatedAt: string;
 }

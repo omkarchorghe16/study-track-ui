@@ -9,6 +9,16 @@ export interface TopicNode {
   itemCount: number;
   /** Items in this topic and all its subtopics. */
   totalItemCount: number;
+  /** DONE items directly in this topic. */
+  doneCount: number;
+  /** DONE items in this topic and all its subtopics. */
+  totalDoneCount: number;
+  /** From the totals, rounded down. */
+  percentDone: number;
+  /** The user marked the topic complete. */
+  completed: boolean;
+  /** Hint: the topic has items and all of them (subtopics included) are DONE. */
+  allItemsDone: boolean;
   children: TopicNode[];
 }
 

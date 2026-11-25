@@ -39,9 +39,8 @@ export const routes: Routes = [
   },
   {
     path: 'study/:subjectId',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/study/study.component').then((module) => module.StudyComponent),
     title: 'Study · StudyTrack',
-    data: { heading: 'Flashcards', phase: 4, summary: 'Flashcards for items due today, rated Again, Hard, Good or Easy.' },
   },
   {
     path: 'import',

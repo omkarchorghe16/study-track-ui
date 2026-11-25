@@ -25,8 +25,17 @@ import { TopicNode } from '../../../core/models/topic.models';
               }
               <button type="button" class="topic-name" [attr.aria-current]="node.id === selectedId() ? 'true' : null"
                       (click)="selected.emit(node.id)">
-                <span>{{ node.name }}</span>
-                <span class="count" [attr.aria-label]="node.totalItemCount + ' items'">{{ node.totalItemCount }}</span>
+                <span class="name-text">
+                  @if (node.completed) {
+                    <span class="check" title="Marked complete" aria-label="Marked complete">✓</span>
+                  } @else if (node.allItemsDone) {
+                    <span class="check hint" title="All items done" aria-label="All items done">✓</span>
+                  }
+                  {{ node.name }}
+                </span>
+                <span class="count" [attr.aria-label]="node.totalDoneCount + ' of ' + node.totalItemCount + ' items done'">
+                  @if (node.totalItemCount) { {{ node.percentDone }}% · } {{ node.totalItemCount }}
+                </span>
               </button>
               <span class="row-actions">
                 <button type="button" class="icon-btn" [attr.aria-label]="'Add subtopic to ' + node.name" (click)="addChild.emit(node)">＋</button>
@@ -49,8 +58,9 @@ import { TopicNode } from '../../../core/models/topic.models';
     .tree-row.selected .topic-name{color:var(--accent)}
     .toggle-spacer{width:28px;flex:none}.toggle{flex:none}
     .topic-name{flex:1;min-width:0;display:flex;justify-content:space-between;gap:8px;padding:7px 6px;border:0;background:none;color:var(--text);font-size:.84rem;text-align:left}
-    .topic-name span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .count{color:var(--muted);font-size:.72rem}
+    .name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .check{color:var(--positive);font-weight:700;margin-right:2px}.check.hint{opacity:.55}
+    .count{flex:none;color:var(--muted);font-size:.72rem}
     .row-actions{display:flex;opacity:.35}.tree-row:hover .row-actions,.tree-row:focus-within .row-actions{opacity:1}
     .row-actions .icon-btn{width:24px;height:24px;font-size:.78rem}
   `],
