@@ -1,0 +1,73 @@
+<app-shell>
+  <section class="page-shell editor-page">
+    <header class="page-header">
+      <div>
+        <h1>{{ isEditing() ? 'Edit item' : 'New item' }}</h1>
+        <p>Format answers with bold, lists, code blocks and links. Images come in the next phase.</p>
+      </div>
+    </header>
+
+    @if (loadError()) {
+      <p class="load-error" role="alert">{{ loadError() }}</p>
+      <a class="btn" routerLink="/subjects">Go to subjects</a>
+    } @else if (loading()) {
+      <p class="text-muted" role="status">Loading…</p>
+    } @else {
+      <form (ngSubmit)="save()" class="card editor-card">
+        @if (saveError()) { <p class="form-error" role="alert">{{ saveError() }}</p> }
+
+        <label class="field"><span>Title</span>
+          <input name="title" [(ngModel)]="title" required maxlength="300" placeholder="How does a HashMap work?" autocomplete="off">
+        </label>
+
+        <div class="field-row">
+          <label class="field"><span>Type</span>
+            <select name="itemType" [(ngModel)]="itemType">
+              @for (type of itemTypes; track type.value) { <option [ngValue]="type.value">{{ type.label }}</option> }
+            </select>
+          </label>
+          <label class="field"><span>Difficulty</span>
+            <select name="difficulty" [(ngModel)]="difficulty">
+              @for (option of difficulties; track option.value) { <option [ngValue]="option.value">{{ option.label }}</option> }
+            </select>
+          </label>
+          <label class="field"><span>Topic</span>
+            <select name="topic" [(ngModel)]="selectedTopicId" required>
+              @for (option of topicOptions(); track option.id) {
+                <option [ngValue]="option.id">{{ '  '.repeat(option.depth) + option.name }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="field">
+          <span class="field-label" id="question-label">Question</span>
+          <quill-editor name="question" [(ngModel)]="questionHtml" format="html" [valueGetter]="readEditorHtml" [modules]="modules"
+                        placeholder="The question, as you would be asked it" (onEditorCreated)="labelEditor($event, 'Question')"></quill-editor>
+        </div>
+        <div class="field">
+          <span class="field-label">Answer</span>
+          <quill-editor name="answer" [(ngModel)]="answerHtml" format="html" [valueGetter]="readEditorHtml" [modules]="modules"
+                        placeholder="Your answer" (onEditorCreated)="labelEditor($event, 'Answer')"></quill-editor>
+        </div>
+        <div class="field">
+          <span class="field-label">Notes</span>
+          <quill-editor name="notes" [(ngModel)]="notesHtml" format="html" [valueGetter]="readEditorHtml" [modules]="modules"
+                        placeholder="Extra notes, pitfalls, follow-up questions" (onEditorCreated)="labelEditor($event, 'Notes')"></quill-editor>
+        </div>
+
+        <label class="field"><span>Tags</span>
+          <input name="tags" [(ngModel)]="tagsText" placeholder="java, collections" autocomplete="off" aria-describedby="tags-hint">
+          <span class="field-hint" id="tags-hint">Separate tags with commas.</span>
+        </label>
+
+        <div class="actions-row end">
+          <a class="btn btn-ghost" [routerLink]="cancelLink()">Cancel</a>
+          <button type="submit" class="btn btn-primary" [disabled]="saving() || !title.trim() || selectedTopicId === null">
+            {{ saving() ? 'Saving…' : 'Save item' }}
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+</app-shell>

@@ -6,3 +6,35 @@
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .skip-link{position:absolute;left:12px;top:-40px;z-index:10;padding:8px 12px;border-radius:6px;background:var(--primary);color:#fff;font-size:13px}.skip-link:focus{top:10px}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- Shared controls (StudyTrack) ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:7px 13px;border:1px solid var(--border);border-radius:7px;background:var(--panel-raised);color:var(--text);font-size:.8rem;font-weight:600;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:#55555c;background:#2e2e33}.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn-primary{border-color:var(--primary);background:var(--primary);color:#fff}.btn-primary:hover:not(:disabled){background:#3d7ef0;border-color:#3d7ef0}
+.btn-danger{border-color:#eb707b66;color:#f28a92;background:#eb707b14}.btn-danger:hover:not(:disabled){border-color:var(--negative);background:#eb707b26}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--muted)}.btn-ghost:hover:not(:disabled){color:var(--text);background:#ffffff0b}
+.btn-small{min-height:28px;padding:4px 9px;font-size:.74rem}
+.icon-btn{display:inline-grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--muted)}.icon-btn:hover{color:var(--text);background:#ffffff10}
+.field{display:grid;gap:6px;margin-bottom:14px}.field>span,.field-label{color:var(--muted);font-size:.74rem;font-weight:600}
+.field input,.field select,.field textarea,.input{width:100%;min-height:36px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:#17171a;color:var(--text);font-size:.85rem}
+.field textarea{min-height:80px;resize:vertical}.field-hint{color:var(--muted);font-size:.72rem}
+.field-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.form-error,.load-error{margin:0 0 14px;padding:10px 12px;border:1px solid #eb707b55;border-radius:7px;background:#eb707b12;color:#f6a2a9;font-size:.82rem}
+.empty-state{padding:28px 18px;text-align:center;color:var(--muted);font-size:.86rem}.empty-state p{margin:0 0 12px}
+.actions-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tag-chip{display:inline-flex;padding:3px 8px;border-radius:99px;background:#4b8cff1c;color:#9dc0ff;font-size:.7rem;font-weight:600}
+.badge.easy{background:#35be841c;color:#56d69c}.badge.medium{background:#f2ca631c;color:#f2ca63}.badge.hard{background:#eb707b1c;color:#f28a92}
+dialog.app-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);box-shadow:0 20px 70px #0009}
+dialog.app-dialog::backdrop{background:#0009}
+.breadcrumbs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;color:var(--muted);font-size:.76rem}.breadcrumbs a{color:#9dc0ff}
+
+/* ---- Quill (snow theme) on the dark surfaces ---- */
+.ql-toolbar.ql-snow{border-color:var(--border);border-radius:7px 7px 0 0;background:var(--panel-raised)}
+.ql-container.ql-snow{border-color:var(--border);border-radius:0 0 7px 7px;background:#17171a;color:var(--text);font-family:inherit;font-size:.9rem}
+.ql-editor{min-height:120px}.ql-editor.ql-blank::before{color:var(--muted);font-style:normal}
+.ql-snow .ql-stroke{stroke:#c5c5ce}.ql-snow .ql-fill{fill:#c5c5ce}.ql-snow .ql-picker{color:#c5c5ce}
+.ql-snow.ql-toolbar button:hover .ql-stroke,.ql-snow.ql-toolbar button.ql-active .ql-stroke{stroke:var(--accent)}
+.ql-snow.ql-toolbar button:hover .ql-fill,.ql-snow.ql-toolbar button.ql-active .ql-fill{fill:var(--accent)}
+.ql-snow .ql-tooltip{background:var(--panel);border-color:var(--border);color:var(--text);box-shadow:none}
+.ql-snow .ql-tooltip input[type=text]{background:#17171a;color:var(--text);border-color:var(--border)}
+.ql-snow .ql-editor pre.ql-syntax,.ql-editor .ql-code-block-container{background:#101012;color:#e6e6ea;border-radius:6px}

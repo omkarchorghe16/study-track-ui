@@ -25,6 +25,14 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
   route data bind to inputs of the same name). `AppComponent` stays `ChangeDetectionStrategy.Eager`.
 - Keep each component's styles under the 4 kB budget; shared look lives in `src/styles.scss`.
 
+- Modals use `DialogComponent` (native `<dialog>`: focus trap, Escape, backdrop); confirm destructive
+  actions with `ConfirmDialogComponent`. Shared button, field and badge classes live in `src/styles.scss`.
+- Render stored HTML only through `RichContentComponent`; never bypass sanitization.
+- Rich text uses ngx-quill (`format="html"` with the editor's `valueGetter`, see `ItemEditorComponent`).
+  Quill's theme CSS is a global style in `angular.json`; `quill-delta` is an allowed CommonJS dependency.
+- Reference pages: `SubjectsComponent` (list + dialog), `SubjectDetailComponent` (two panes, selection
+  in the query string), `ItemEditorComponent` (form with editors).
+
 ## Routes and placeholders
 
 - Every route is lazy-loaded (`loadComponent`) in `app.routes.ts`.

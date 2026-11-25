@@ -14,33 +14,28 @@ export const routes: Routes = [
   },
   {
     path: 'subjects',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/subjects/subjects.component').then((module) => module.SubjectsComponent),
     title: 'Subjects · StudyTrack',
-    data: { heading: 'Subjects', phase: 2, summary: 'Subject cards with progress, and a dialog to create or edit a subject.' },
   },
   {
     path: 'subjects/:id',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/subject-detail/subject-detail.component').then((module) => module.SubjectDetailComponent),
     title: 'Subject · StudyTrack',
-    data: { heading: 'Subject', phase: 2, summary: 'Topic tree on the left, items with filters on the right, and "Mark topic complete".' },
   },
   {
     path: 'items/new',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/item-editor/item-editor.component').then((module) => module.ItemEditorComponent),
     title: 'New item · StudyTrack',
-    data: { heading: 'New item', phase: 2, summary: 'Rich text editor for the question, answer and notes.' },
   },
   {
     path: 'items/:id/edit',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/item-editor/item-editor.component').then((module) => module.ItemEditorComponent),
     title: 'Edit item · StudyTrack',
-    data: { heading: 'Edit item', phase: 2, summary: 'Rich text editor for the question, answer and notes.' },
   },
   {
     path: 'items/:id',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/item-view/item-view.component').then((module) => module.ItemViewComponent),
     title: 'Item · StudyTrack',
-    data: { heading: 'Item', phase: 2, summary: 'Reading view with the answer, notes, status buttons and previous/next.' },
   },
   {
     path: 'study/:subjectId',
