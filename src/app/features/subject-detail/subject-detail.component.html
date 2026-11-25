@@ -1,0 +1,105 @@
+<app-shell>
+  <section class="page-shell">
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><a routerLink="/subjects">Subjects</a><span aria-hidden="true">›</span><span>{{ subject()?.name ?? '…' }}</span></nav>
+    <header class="page-header">
+      <div>
+        <h1>{{ subject()?.icon }} {{ subject()?.name ?? 'Subject' }}</h1>
+        <p>{{ subject()?.description || 'Pick a topic to see its items.' }}</p>
+      </div>
+    </header>
+
+    @if (loadError()) {
+      <p class="load-error" role="alert">{{ loadError() }}</p>
+    }
+
+    <div class="two-pane">
+      <aside class="card tree-pane" aria-labelledby="topics-heading">
+        <div class="pane-header">
+          <h2 id="topics-heading">Topics</h2>
+          <button type="button" class="btn btn-small" (click)="openNewTopic(null)">＋ Topic</button>
+        </div>
+        @if (loadingTree() && tree().length === 0) {
+          <p class="text-muted" role="status">Loading topics…</p>
+        } @else if (tree().length === 0) {
+          <div class="empty-state"><p>No topics yet.</p><button type="button" class="btn btn-primary btn-small" (click)="openNewTopic(null)">Add the first topic</button></div>
+        } @else {
+          <app-topic-tree [nodes]="tree()" [selectedId]="selectedTopic()?.id ?? null" (selected)="selectTopic($event)"
+                          (addChild)="openNewTopic($event.id)" (edit)="openEditTopic($event)" (remove)="askDeleteTopic($event)"></app-topic-tree>
+        }
+      </aside>
+
+      <section class="card items-pane" aria-labelledby="items-heading">
+        @if (selectedTopic(); as topic) {
+          <div class="pane-header">
+            <h2 id="items-heading">{{ topic.name }}</h2>
+            <a class="btn btn-primary btn-small" routerLink="/items/new" [queryParams]="{ topicId: topic.id }">＋ New item</a>
+          </div>
+
+          <form class="filters" (ngSubmit)="applyFilters()" aria-label="Filter items">
+            <label class="field"><span>Difficulty</span>
+              <select name="difficulty" [(ngModel)]="difficultyFilter" (ngModelChange)="applyFilters()">
+                <option [ngValue]="null">Any</option>
+                @for (difficulty of difficulties; track difficulty.value) {
+                  <option [ngValue]="difficulty.value">{{ difficulty.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="field"><span>Tag</span>
+              <input name="tag" [(ngModel)]="tagFilter" placeholder="e.g. jvm" autocomplete="off">
+            </label>
+            <div class="filter-actions">
+              <button type="submit" class="btn btn-small">Apply</button>
+              @if (difficultyFilter || tagFilter) {
+                <button type="button" class="btn btn-small btn-ghost" (click)="clearFilters()">Clear</button>
+              }
+            </div>
+          </form>
+
+          @if (itemsError()) {
+            <p class="load-error" role="alert">{{ itemsError() }}</p>
+          } @else if (itemsLoading() && !items()) {
+            <p class="text-muted" role="status">Loading items…</p>
+          } @else if (items(); as page) {
+            @if (page.items.length === 0) {
+              <div class="empty-state">
+                <p>{{ difficultyFilter || tagFilter ? 'No items match these filters.' : 'No items in this topic yet.' }}</p>
+                @if (topic.children.length && topic.totalItemCount > topic.itemCount) {
+                  <p>Its subtopics hold {{ topic.totalItemCount - topic.itemCount }} items.</p>
+                }
+              </div>
+            } @else {
+              <ul class="item-list" [attr.aria-busy]="itemsLoading()">
+                @for (item of page.items; track item.id) {
+                  <li class="item-row">
+                    <a class="item-title" [routerLink]="['/items', item.id]">{{ item.title }}</a>
+                    <div class="item-meta">
+                      <span class="type">{{ itemTypeLabel(item.itemType) }}</span>
+                      <span class="badge" [class]="item.difficulty.toLowerCase()">{{ difficultyLabel(item.difficulty) }}</span>
+                      @for (tag of item.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
+                      @if (!item.hasAnswer && item.itemType === 'QUESTION') { <span class="no-answer">No answer yet</span> }
+                    </div>
+                  </li>
+                }
+              </ul>
+              @if (page.totalPages > 1) {
+                <nav class="pager" aria-label="Item pages">
+                  <button type="button" class="btn btn-small" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">Previous</button>
+                  <span>Page {{ page.page + 1 }} of {{ page.totalPages }}</span>
+                  <button type="button" class="btn btn-small" [disabled]="page.page + 1 >= page.totalPages" (click)="goToPage(page.page + 1)">Next</button>
+                </nav>
+              }
+            }
+          }
+        } @else {
+          <h2 id="items-heading" class="sr-only">Items</h2>
+          <div class="empty-state"><p>{{ tree().length ? 'Select a topic on the left to see its items.' : 'Add a topic first, then add questions and notes to it.' }}</p></div>
+        }
+      </section>
+    </div>
+  </section>
+
+  <app-topic-dialog [open]="topicDialogOpen()" [subjectId]="id()" [tree]="tree()" [topic]="editingTopic()"
+                    [initialParentId]="newTopicParentId()" (saved)="onTopicSaved($event.id)" (closed)="topicDialogOpen.set(false)"></app-topic-dialog>
+  <app-confirm-dialog [open]="!!deletingTopic()" heading="Delete topic?" [message]="deleteTopicMessage()" [busy]="deleteBusy()"
+                      [error]="deleteError()" (confirmed)="confirmDeleteTopic()" (cancelled)="deletingTopic.set(null)"></app-confirm-dialog>
+</app-shell>

@@ -9,16 +9,19 @@ The build plan is in that repository's `docs/BUILD_PLAN.md`.
 
 ## Status
 
-Phase 1 (scaffolding) is done: the shell, every route (lazy-loaded), the dev proxy and a dashboard that
-checks the API connection. Pages from later phases show a placeholder naming the phase that builds them.
+Phases 1 and 2 are done: the shell and dev proxy, an API connection card on the dashboard, and the
+subjects, topic tree, item list, item reading view and Quill item editor. Pages from later phases show a
+placeholder naming the phase that builds them.
 
 ## Screens
 
 | Route | Screen | State |
 |---|---|---|
 | `/dashboard` (also `/`) | Dashboard | Phase 1: API connection card (`GET /api/v1/status`). Progress and charts in phase 4 |
-| `/subjects`, `/subjects/:id` | Subjects, subject with topic tree and items | placeholder (phase 2) |
-| `/items/:id`, `/items/:id/edit`, `/items/new` | Item reading view and editor | placeholder (phase 2) |
+| `/subjects` | Subject cards (icon, description, topic and item counts) with create, edit, archive and delete | live |
+| `/subjects/:id?topic=` | Topic tree (add, rename, move, delete topics) and the selected topic's items, filtered by difficulty and tag, 20 per page | live |
+| `/items/:id` | Reading view: question, answer, notes, tags, previous/next in the topic, edit and delete | live |
+| `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes; title, type, difficulty, topic and tags | live |
 | `/study/:subjectId` | Flashcards | placeholder (phase 4) |
 | `/import` | Import wizard | placeholder (phase 5) |
 | `/settings` | LLM provider and theme | placeholder (phase 5) |
@@ -36,6 +39,13 @@ npm start                 # http://localhost:4201, proxies /api to http://localh
 Start `study-track-api` first (see its README). If it is not running, the dashboard says
 "Not connected … The StudyTrack API (port 8083) is not reachable."
 
+## Notes
+
+- Stored HTML is rendered by `RichContentComponent` through Angular's built-in sanitizer. Phase 3 adds
+  DOMPurify, server-side sanitising, images and code highlighting.
+- Quill 2 writes spaces as `&nbsp;`; the editor's `valueGetter` turns them back into spaces so answers wrap.
+- Empty editors are saved as `null`, so an unanswered question shows "No answer yet".
+
 ## Checks
 
 ```bash
@@ -49,10 +59,11 @@ npm run typecheck         # strict tsc with --noUnusedLocals --noUnusedParameter
 
 ```
 src/app/
-  core/models/       typed API payloads (status.models.ts)
-  core/services/     one HTTP service per API area (status.service.ts), api-error.ts
-  features/          routed pages (dashboard/)
-  shared/components/ shell/ (page frame and navigation), coming-soon/ (placeholder for later phases)
+  core/models/       typed API payloads and tree helpers (subject, topic, item, status)
+  core/services/     one HTTP service per API area (subjects, topics, items, status), api-error.ts
+  features/          routed pages: dashboard/, subjects/, subject-detail/, item-view/, item-editor/
+  shared/components/ shell/, dialog/ (native <dialog>), confirm-dialog/, topic-tree/, rich-content/,
+                     coming-soon/ (placeholder for later phases)
 ```
 
 Rules for contributors and Claude Code are in `CLAUDE.md` and `.github/`; shared rules come from
