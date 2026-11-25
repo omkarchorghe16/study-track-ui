@@ -1,0 +1,169 @@
+<app-shell>
+  <section class="page-shell">
+    <header class="page-header">
+      <div>
+        <h1>Import notes</h1>
+        <p>Upload a Word, PDF, Markdown or text file. The LLM finds questions and answers; you review them before anything is saved.</p>
+      </div>
+      @if (job() !== undefined) {
+        <a class="btn" routerLink="/import">＋ New import</a>
+      } @else {
+        <a class="btn" routerLink="/settings">LLM settings</a>
+      }
+    </header>
+
+    @if (job() === undefined) {
+      @if (loadError()) {
+        <p class="load-error" role="alert">{{ loadError() }} <button type="button" class="btn btn-small" (click)="loadStartData()">Retry</button></p>
+      }
+      <form class="card upload-card" (ngSubmit)="startImport()">
+        <h2>1. Choose a subject and a file</h2>
+        @if (startError()) { <p class="form-error" role="alert">{{ startError() }}</p> }
+        <div class="field-row">
+          <label class="field"><span>Subject</span>
+            <select name="subject" [(ngModel)]="selectedSubjectId" required>
+              <option [ngValue]="null" disabled>Choose a subject</option>
+              @for (subject of subjects(); track subject.id) {
+                @if (!subject.archived) { <option [ngValue]="subject.id">{{ subject.name }}</option> }
+              }
+            </select>
+          </label>
+          <label class="field"><span>File</span>
+            <input type="file" name="file" [accept]="acceptedTypes" (change)="chooseFile($event)" aria-describedby="file-hint">
+            <span class="field-hint" id="file-hint">.docx, .pdf, .md or .txt, up to 20 MB.</span>
+          </label>
+        </div>
+        @if (fileError()) { <p class="form-error" role="alert">{{ fileError() }}</p> }
+        @if (subjects().length === 0 && !loadError()) {
+          <p class="text-muted">Create a subject first on the <a class="link" routerLink="/subjects">Subjects</a> page.</p>
+        }
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary" [disabled]="starting() || !selectedFile() || selectedSubjectId === null">
+            {{ starting() ? 'Uploading…' : 'Start import' }}
+          </button>
+        </div>
+      </form>
+
+      <h2 class="section-heading">Recent imports</h2>
+      @if (recentImports().length === 0) {
+        <p class="card empty-state">No imports yet.</p>
+      } @else {
+        <ul class="recent-list">
+          @for (recent of recentImports(); track recent.id) {
+            <li class="card recent-row">
+              <a class="recent-name" [routerLink]="['/import']" [queryParams]="{ job: recent.id }">{{ recent.fileName }}</a>
+              <span class="text-muted">{{ subjectNameFor(recent.subjectId) }} · {{ recent.createdAt | date: 'MMM d, h:mm a' }}</span>
+              <span class="status-pill" [class.done]="recent.status === 'COMPLETED'" [class.failed]="recent.status === 'FAILED'">{{ statusLabels[recent.status] }}</span>
+              @if (recent.candidates.open) { <span class="text-muted">{{ recent.candidates.open }} to review</span> }
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      @if (jobError()) { <p class="load-error" role="alert">{{ jobError() }}</p> }
+      @if (currentJob(); as current) {
+        <div class="card job-card">
+          <div class="job-heading">
+            <h2>{{ current.fileName }}</h2>
+            <span class="status-pill" [class.done]="current.status === 'COMPLETED'" [class.failed]="current.status === 'FAILED'">{{ statusLabels[current.status] }}</span>
+          </div>
+          <p class="text-muted job-meta">
+            {{ subjectName() }} · {{ current.llmProvider ?? '—' }} {{ current.llmModel ?? '' }} ·
+            {{ current.inputTokens | number }} input / {{ current.outputTokens | number }} output tokens
+          </p>
+          @if (running()) {
+            <app-progress-bar [value]="current.percentComplete" label="Import progress" suffix="processed"></app-progress-bar>
+            <p class="text-muted" role="status" aria-live="polite">
+              {{ statusLabels[current.status] }}… {{ current.totalChunks ? current.processedChunks + ' of ' + current.totalChunks + ' parts' : '' }}
+            </p>
+          }
+          @if (current.status === 'FAILED') {
+            <p class="form-error" role="alert">{{ current.errorMessage || 'The import failed.' }}</p>
+          } @else if (current.failedChunks) {
+            <p class="form-error">{{ current.failedChunks }} of {{ current.totalChunks }} parts could not be read by the LLM; their questions are missing.</p>
+          }
+          @if (reviewable() || current.candidates.total) {
+            <p class="text-muted">
+              {{ current.candidates.total }} found · {{ current.candidates.open }} to review ·
+              {{ current.candidates.approved }} approved · {{ current.candidates.rejected }} rejected
+            </p>
+          }
+        </div>
+
+        @if (candidatesLoading()) { <p class="text-muted" role="status">Loading candidates…</p> }
+        @if (candidates().length) {
+          <h2 class="section-heading">Review</h2>
+          @if (actionError()) { <p class="form-error" role="alert">{{ actionError() }}</p> }
+          <p class="text-muted" role="status" aria-live="polite">{{ actionMessage() }}</p>
+          @if (openCandidates().length) {
+            <div class="actions-row bulk-bar">
+              <label class="check"><input type="checkbox" [checked]="allSelected()" (change)="toggleAll()"> Select all open</label>
+              <button type="button" class="btn btn-success" [disabled]="actionBusy() || !selectedOpenIds().length"
+                      (click)="approve({ candidateIds: selectedOpenIds() })">Approve selected ({{ selectedOpenIds().length }})</button>
+              <button type="button" class="btn btn-danger" [disabled]="actionBusy() || !selectedOpenIds().length"
+                      (click)="reject({ candidateIds: selectedOpenIds() })">Reject selected</button>
+              <button type="button" class="btn" [disabled]="actionBusy()" (click)="approve({ all: true })">Approve all open</button>
+            </div>
+          }
+          <ul class="candidate-list">
+            @for (candidate of candidates(); track candidate.id) {
+              <li class="card candidate" [class.closed]="!isCandidateOpen(candidate.status)">
+                <div class="candidate-top">
+                  @if (isCandidateOpen(candidate.status)) {
+                    <input type="checkbox" [checked]="selectedIds().has(candidate.id)" (change)="toggleSelected(candidate.id)"
+                           [attr.aria-label]="'Select ' + candidate.title">
+                  }
+                  <button type="button" class="candidate-title" [attr.aria-expanded]="expandedIds().has(candidate.id)"
+                          (click)="toggleExpanded(candidate.id)">{{ candidate.title }}</button>
+                </div>
+                <div class="candidate-meta">
+                  <span class="tag-chip">{{ typeLabel(candidate) }}</span>
+                  @if (candidate.difficulty) { <span [class]="'badge ' + candidate.difficulty.toLowerCase()">{{ candidate.difficulty.toLowerCase() }}</span> }
+                  <span class="text-muted">{{ topicLabel(candidate) }}</span>
+                  @if (candidate.confidence !== undefined) {
+                    <span class="badge info" [class.low]="candidate.confidence < 0.6">{{ candidate.confidence * 100 | number: '1.0-0' }}% sure</span>
+                  }
+                  @if (candidate.duplicateItemId) {
+                    <a class="badge warn" [routerLink]="['/items', candidate.duplicateItemId]">Already saved</a>
+                  } @else if (candidate.duplicateOfCandidateId) {
+                    <span class="badge warn">Repeated</span>
+                  }
+                  @if (candidate.status !== 'PENDING') { <span class="status-pill" [class.done]="candidate.status === 'APPROVED'">{{ candidate.status.toLowerCase() }}</span> }
+                  @for (tag of candidate.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
+                </div>
+                @if (expandedIds().has(candidate.id)) {
+                  <div class="candidate-body">
+                    <h3>Question</h3><app-rich-content [html]="candidate.questionHtml"></app-rich-content>
+                    <h3>Answer</h3><app-rich-content [html]="candidate.answerHtml"></app-rich-content>
+                    @if (candidate.notesHtml) { <h3>Notes</h3><app-rich-content [html]="candidate.notesHtml"></app-rich-content> }
+                  </div>
+                }
+                <div class="actions-row">
+                  @if (isCandidateOpen(candidate.status)) {
+                    <button type="button" class="btn btn-small" (click)="editing.set(candidate)" [attr.aria-label]="'Edit ' + candidate.title">Edit</button>
+                    <button type="button" class="btn btn-small btn-success" [disabled]="actionBusy()" (click)="approve({ candidateIds: [candidate.id] })"
+                            [attr.aria-label]="'Approve ' + candidate.title">Approve</button>
+                    <button type="button" class="btn btn-small btn-danger" [disabled]="actionBusy()" (click)="reject({ candidateIds: [candidate.id] })"
+                            [attr.aria-label]="'Reject ' + candidate.title">Reject</button>
+                  } @else if (candidate.createdItemId) {
+                    <a class="btn btn-small" [routerLink]="['/items', candidate.createdItemId]">Open item</a>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+          @if (current.status === 'COMPLETED') {
+            <a class="btn btn-primary" [routerLink]="['/subjects', current.subjectId]">Go to {{ subjectName() }}</a>
+          }
+        } @else if (reviewable() && !candidatesLoading()) {
+          <p class="card empty-state">The LLM found no questions in this file.</p>
+        }
+      } @else if (!jobError()) {
+        <p class="text-muted" role="status">Loading the import…</p>
+      }
+    }
+  </section>
+
+  <app-candidate-dialog [open]="!!editing()" [importId]="currentJob()?.id ?? 0" [candidate]="editing()" [topicOptions]="topicOptions()"
+                        (saved)="onCandidateSaved($event)" (closed)="editing.set(null)"></app-candidate-dialog>
+</app-shell>

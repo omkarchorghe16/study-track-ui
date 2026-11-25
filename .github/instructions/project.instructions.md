@@ -42,6 +42,9 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
   series, a tooltip on hover and keyboard focus, and a table view.
 - The resume point is saved (best effort, errors ignored) when an item opens and when a topic is
   selected. Rating-interval hints use `reviewIntervalDays`, which must match the API's `ReviewScheduler`.
+- Imports run in the background on the API. Poll `GET /imports/{id}` with an RxJS `timer` that stops
+  when the job is no longer running and when the component is destroyed. Never ask for, store or show
+  an LLM API key in the app; keys live only in the API's environment.
 
 ## Routes and placeholders
 

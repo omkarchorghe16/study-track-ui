@@ -44,9 +44,8 @@ export const routes: Routes = [
   },
   {
     path: 'import',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/import/import.component').then((module) => module.ImportComponent),
     title: 'Import · StudyTrack',
-    data: { heading: 'Import notes', phase: 5, summary: 'Upload a Word, PDF, Markdown or text file and review the questions the LLM extracts.' },
   },
   {
     path: 'search',
@@ -56,9 +55,8 @@ export const routes: Routes = [
   },
   {
     path: 'settings',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/settings/settings.component').then((module) => module.SettingsComponent),
     title: 'Settings · StudyTrack',
-    data: { heading: 'Settings', phase: 5, summary: 'LLM provider and model, connection test, and theme.' },
   },
   { path: '**', redirectTo: 'dashboard' },
 ];

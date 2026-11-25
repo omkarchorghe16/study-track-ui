@@ -12,6 +12,7 @@ import { ItemsService } from '../../core/services/items.service';
 import { MediaService } from '../../core/services/media.service';
 import { TopicsService } from '../../core/services/topics.service';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
+import { altTextFor, labelEditor, parseTags, readEditorHtml, toStoredHtml } from '../../shared/editor/editor-html';
 import { mediaEditorModules } from '../../shared/editor/quill-media';
 
 const TOOLBAR = [
@@ -21,32 +22,6 @@ const TOOLBAR = [
   ['blockquote', 'code-block', 'link', 'image'],
   ['clean'],
 ];
-
-/** Editor HTML with no visible text (Quill's empty "<p><br></p>") is stored as null. */
-function toStoredHtml(html: string | null): string | null {
-  if (!html) {
-    return null;
-  }
-  const hasText = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length > 0;
-  return hasText || /<(img|pre|iframe)\b/i.test(html) ? html : null;
-}
-
-/**
- * Model value of the editors. Quill 2's getSemanticHTML() writes every space as &nbsp;, which stops
- * long answers from wrapping when rendered, so spaces are restored. Code blocks keep their own spacing.
- */
-function readEditorHtml(editor: Quill): string | null {
-  return toStoredHtml(editor.getSemanticHTML().replace(/&nbsp;/g, ' '));
-}
-
-/** Alt text from a file name: "binary-tree_diagram.png" becomes "binary tree diagram". */
-function altTextFor(file: File): string {
-  return file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim().slice(0, 500);
-}
-
-function parseTags(text: string): string[] {
-  return [...new Set(text.split(',').map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length > 0))];
-}
 
 /** Creates an item (`/items/new?topicId=`) or edits one (`/items/:id/edit`) with Quill rich text editors. */
 @Component({
@@ -71,6 +46,7 @@ export class ItemEditorComponent {
   protected readonly difficulties = DIFFICULTIES;
   protected readonly modules = mediaEditorModules(TOOLBAR, (quill, index, files) => this.uploadImages(quill, index, files));
   protected readonly readEditorHtml = readEditorHtml;
+  protected readonly labelEditor = labelEditor;
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -106,12 +82,6 @@ export class ItemEditorComponent {
     return this.id() !== undefined;
   }
 
-  /** Quill renders a contenteditable div; give it the field's name for screen readers. */
-  protected labelEditor(editor: Quill, label: string): void {
-    editor.root.setAttribute('aria-label', label);
-    editor.root.setAttribute('role', 'textbox');
-    editor.root.setAttribute('aria-multiline', 'true');
-  }
 
   protected save(): void {
     const title = this.title.trim();

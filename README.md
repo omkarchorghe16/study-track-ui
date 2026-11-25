@@ -9,10 +9,10 @@ The build plan is in that repository's `docs/BUILD_PLAN.md`.
 
 ## Status
 
-Phases 1 to 4 are done: the shell and dev proxy, subjects, topic tree, item list, item reading view and
-Quill item editor, images and highlighted code in items, and progress tracking (item status, confidence,
-bookmarks, topic completion, the dashboard and flashcards). Pages from later phases show a placeholder
-naming the phase that builds them.
+Phases 1 to 5 are done: the shell and dev proxy, subjects, topic tree, item list, item reading view and
+Quill item editor, images and highlighted code in items, progress tracking (item status, confidence,
+bookmarks, topic completion, the dashboard and flashcards), and LLM import with review. Search (phase 6)
+still shows a placeholder.
 
 ## Screens
 
@@ -24,8 +24,8 @@ naming the phase that builds them.
 | `/items/:id` | Reading view: status (Not started / Learning / Done), confidence stars, bookmark, question, answer, notes, tags, previous/next in the topic, edit and delete. Opening it saves the resume point | live |
 | `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes (images by button, paste or drop); title, type, difficulty, topic and tags | live |
 | `/study/:subjectId` | Flashcards: cards due today, then new ones; show the answer, rate Again / Hard / Good / Easy (`GET /api/v1/reviews/due`, `POST /api/v1/reviews`) | live |
-| `/import` | Import wizard | placeholder (phase 5) |
-| `/settings` | LLM provider and theme | placeholder (phase 5) |
+| `/import`, `/import?job=` | Import wizard: choose a subject and a .docx/.pdf/.md/.txt file (≤20 MB, checked before upload), follow the progress (polled every 2.5 s), then review the candidates: preview, edit (Quill editors, type, difficulty, tags, topic or topic path), approve or reject one by one, selected or all. Duplicates of saved items start unselected. Recent imports are listed | live |
+| `/settings` | LLM for imports: provider, model, base URL, on/off, whether the server has the API key, Test connection, Save. Theme comes with phase 6 | live |
 | `/search` | Search | placeholder (phase 6) |
 
 Unknown paths redirect to `/dashboard`. There is no login; the API acts as user 1.
@@ -57,7 +57,11 @@ Start `study-track-api` first (see its README). If it is not running, pages say
   sanitiser, images only from `/api/v1/media/`), then highlight.js on code blocks (theme `github-dark`,
   a global style in `angular.json`). The API also sanitises every save.
 - Quill 2 writes spaces as `&nbsp;`; the editor's `valueGetter` turns them back into spaces so answers wrap.
-- Empty editors are saved as `null`, so an unanswered question shows "No answer yet".
+- Empty editors are saved as `null`, so an unanswered question shows "No answer yet". The editor helpers
+  (`toStoredHtml`, `readEditorHtml`, `parseTags`) are in `shared/editor/editor-html.ts`.
+- Imports: `ImportsService` (`/api/v1/imports`) and `SettingsService` (`/api/v1/settings/llm`). Nothing
+  becomes an item until a candidate is approved. API keys are never entered or shown in the app: the
+  settings page only says whether `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` is set on the server.
 
 ## Checks
 
@@ -72,12 +76,14 @@ npm run typecheck         # strict tsc with --noUnusedLocals --noUnusedParameter
 
 ```
 src/app/
-  core/models/       typed API payloads and tree helpers (subject, topic, item, media, progress, stats)
-  core/services/     one HTTP service per API area (subjects, topics, items, media, progress, stats), api-error.ts
-  features/          routed pages: dashboard/, subjects/, subject-detail/, item-view/, item-editor/, study/
+  core/models/       typed API payloads and tree helpers (subject, topic, item, media, progress, stats, import, llm-settings)
+  core/services/     one HTTP service per API area (subjects, topics, items, media, progress, stats, imports, settings),
+                     api-error.ts
+  features/          routed pages: dashboard/, subjects/, subject-detail/, item-view/, item-editor/, study/,
+                     import/, settings/
   shared/components/ shell/, dialog/ (native <dialog>), confirm-dialog/, topic-tree/, rich-content/, progress-bar/,
                      coming-soon/ (placeholder for later phases)
-  shared/editor/     Quill image upload and paste handling (quill-media.ts)
+  shared/editor/     Quill image upload and paste handling (quill-media.ts), editor HTML helpers (editor-html.ts)
 ```
 
 Rules for contributors and Claude Code are in `CLAUDE.md` and `.github/`; shared rules come from
