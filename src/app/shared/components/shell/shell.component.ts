@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ToastHostComponent } from '../toast-host/toast-host.component';
 
 interface NavLink {
   path: string;
@@ -11,7 +12,7 @@ interface NavLink {
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, ToastHostComponent],
   template: `
     <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="shell-layout">
@@ -32,17 +33,18 @@ interface NavLink {
         </nav>
       </div>
     </div>
+    <app-toast-host></app-toast-host>
   `,
   styles: [`
     :host{display:block;min-height:100vh;background:var(--bg);color:var(--text)}
     .topbar{height:54px;display:flex;align-items:center;gap:32px;padding:0 22px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
     .brand{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:700;letter-spacing:2px;font-size:13px}.brand b{color:var(--primary);letter-spacing:0}
     .brand-mark{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;background:#ffca28;color:#151515;font-size:15px;font-weight:800}
-    .primary-nav{display:flex;align-items:center;gap:22px;margin-left:auto}.primary-nav a{font-size:12px;color:#a6a6af;white-space:nowrap}
-    .primary-nav a.active,.primary-nav a:hover,.tool-rail a.active,.tool-rail a:hover{color:#f3ce68}
+    .primary-nav{display:flex;align-items:center;gap:22px;margin-left:auto}.primary-nav a{font-size:12px;color:var(--muted);white-space:nowrap}
+    .primary-nav a.active,.primary-nav a:hover,.tool-rail a.active,.tool-rail a:hover{color:var(--accent)}
     .workspace{display:grid;grid-template-columns:minmax(0,1fr) 58px;min-height:calc(100vh - 54px)}.main-panel{min-width:0;padding:24px clamp(18px,4vw,70px);outline:none}
     .tool-rail{position:sticky;top:54px;height:calc(100vh - 54px);display:flex;flex-direction:column;align-items:center;gap:15px;padding:25px 5px;background:var(--panel);border-left:1px solid var(--border)}
-    .tool-rail a{display:grid;justify-items:center;gap:3px;color:#a4a4ab;font-size:17px}.tool-rail small{font-size:9px}
+    .tool-rail a{display:grid;justify-items:center;gap:3px;color:var(--muted);font-size:17px}.tool-rail small{font-size:9px}
     @media(max-width:900px){.topbar{gap:12px;padding:0 14px}.primary-nav{gap:12px}.main-panel{padding:18px}.workspace{grid-template-columns:minmax(0,1fr) 48px}}
     @media(max-width:620px){.topbar{height:auto;min-height:54px;flex-wrap:wrap;padding:10px 12px}.primary-nav{order:3;overflow:auto;width:100%;margin:0;padding:4px 0}.workspace{grid-template-columns:1fr}.tool-rail{display:none}}
   `],

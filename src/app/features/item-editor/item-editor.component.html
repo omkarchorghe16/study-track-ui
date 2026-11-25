@@ -63,6 +63,20 @@
           <span class="field-hint" id="tags-hint">Separate tags with commas.</span>
         </label>
 
+        @if (duplicates().length) {
+          <div class="duplicate-warning" role="alert">
+            <p><strong>This question is already in the subject.</strong> Open the existing item (new tab) or save this one anyway.</p>
+            <ul>
+              @for (duplicate of duplicates(); track duplicate.id) {
+                <li><a [routerLink]="['/items', duplicate.id]" target="_blank" rel="noopener">{{ duplicate.title }}</a><span class="text-muted">{{ ' in ' + duplicate.topicName }}</span></li>
+              }
+            </ul>
+            <div class="actions-row">
+              <button type="button" class="btn btn-small" (click)="saveDespiteDuplicates()">Save anyway</button>
+              <button type="button" class="btn btn-small btn-ghost" (click)="duplicates.set([])">Keep editing</button>
+            </div>
+          </div>
+        }
         <div class="actions-row end">
           <a class="btn btn-ghost" [routerLink]="cancelLink()">Cancel</a>
           <button type="submit" class="btn btn-primary" [disabled]="saving() || uploadsInProgress() > 0 || !title.trim() || selectedTopicId === null">

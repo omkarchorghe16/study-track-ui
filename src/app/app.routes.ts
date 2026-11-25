@@ -1,9 +1,7 @@
 import { Routes } from '@angular/router';
 
-// Every page is lazy-loaded. Pages not built yet show the coming-soon placeholder; the data says which
-// phase of docs/BUILD_PLAN.md builds them. Replace a placeholder with its feature component in that phase.
-const comingSoon = () =>
-  import('./shared/components/coming-soon/coming-soon.component').then((module) => module.ComingSoonComponent);
+// Every page is lazy-loaded. A page that is planned but not built yet points at ComingSoonComponent
+// (shared/components/coming-soon) with data { heading, phase, summary }.
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -49,9 +47,8 @@ export const routes: Routes = [
   },
   {
     path: 'search',
-    loadComponent: comingSoon,
+    loadComponent: () => import('./features/search/search.component').then((module) => module.SearchComponent),
     title: 'Search · StudyTrack',
-    data: { heading: 'Search', phase: 6, summary: 'Full-text search across all your items.' },
   },
   {
     path: 'settings',

@@ -9,10 +9,11 @@ The build plan is in that repository's `docs/BUILD_PLAN.md`.
 
 ## Status
 
-Phases 1 to 5 are done: the shell and dev proxy, subjects, topic tree, item list, item reading view and
+Phases 1 to 6 are done: the shell and dev proxy, subjects, topic tree, item list, item reading view and
 Quill item editor, images and highlighted code in items, progress tracking (item status, confidence,
-bookmarks, topic completion, the dashboard and flashcards), and LLM import with review. Search (phase 6)
-still shows a placeholder.
+bookmarks, topic completion, the dashboard and flashcards), LLM import with review, and search and
+polish (full-text search, duplicate warning, flashcard shortcuts, toasts, light and dark themes).
+Phase 7 (accounts and deployment) is not started.
 
 ## Screens
 
@@ -22,11 +23,11 @@ still shows a placeholder.
 | `/subjects` | Subject cards (icon, description, counts, progress bar, Study link) with create, edit, archive and delete | live |
 | `/subjects/:id?topic=` | Subject progress; topic tree with % and check marks (add, rename, move, delete topics); the selected topic's items with status, filtered by status, difficulty and tag, 20 per page; "Mark topic complete" | live |
 | `/items/:id` | Reading view: status (Not started / Learning / Done), confidence stars, bookmark, question, answer, notes, tags, previous/next in the topic, edit and delete. Opening it saves the resume point | live |
-| `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes (images by button, paste or drop); title, type, difficulty, topic and tags | live |
-| `/study/:subjectId` | Flashcards: cards due today, then new ones; show the answer, rate Again / Hard / Good / Easy (`GET /api/v1/reviews/due`, `POST /api/v1/reviews`) | live |
+| `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes (images by button, paste or drop); title, type, difficulty, topic and tags. Before saving a new question (or a changed one) it lists items of the subject with the same question and offers "Save anyway" (`POST /api/v1/items/duplicate-check`) | live |
+| `/study/:subjectId` | Flashcards: cards due today, then new ones; show the answer, rate Again / Hard / Good / Easy (`GET /api/v1/reviews/due`, `POST /api/v1/reviews`). Keys: Space or Enter shows the answer, 1–4 rate it | live |
 | `/import`, `/import?job=` | Import wizard: choose a subject and a .docx/.pdf/.md/.txt file (≤20 MB, checked before upload), follow the progress (polled every 2.5 s), then review the candidates: preview, edit (Quill editors, type, difficulty, tags, topic or topic path), approve or reject one by one, selected or all. Duplicates of saved items start unselected. Recent imports are listed | live |
-| `/settings` | LLM for imports: provider, model, base URL, on/off, whether the server has the API key, Test connection, Save. Theme comes with phase 6 | live |
-| `/search` | Search | placeholder (phase 6) |
+| `/settings` | LLM for imports: provider, model, base URL, on/off, whether the server has the API key, Test connection, Save. Appearance: Dark (default), Light or same as the system | live |
+| `/search?q=&subject=` | Full-text search across all items (or one subject): every word must match as a prefix; results show subject › topic, a snippet with the matching words highlighted, type, difficulty and status; 20 at a time (`GET /api/v1/items/search`) | live |
 
 Unknown paths redirect to `/dashboard`. There is no login; the API acts as user 1.
 
@@ -59,6 +60,14 @@ Start `study-track-api` first (see its README). If it is not running, pages say
 - Quill 2 writes spaces as `&nbsp;`; the editor's `valueGetter` turns them back into spaces so answers wrap.
 - Empty editors are saved as `null`, so an unanswered question shows "No answer yet". The editor helpers
   (`toStoredHtml`, `readEditorHtml`, `parseTags`) are in `shared/editor/editor-html.ts`.
+- Toasts: `ToastService.showSuccess` / `showError` for the result of an action (saved, deleted, approved,
+  failed); `ToastHostComponent` sits in the shell. Load errors and form validation stay inline.
+- Themes: colours are CSS variables in `styles.scss` (`:root` dark, `:root[data-theme=light]` light).
+  `ThemeService` stores the choice in this browser's localStorage and sets `data-theme` on `<html>` at
+  startup. Use the variables (`--sunken`, `--overlay-1`, `--info-text`, …) instead of hex colours. Code
+  blocks stay dark in both themes.
+- Search snippets come from the API as `{text, match}` parts and are rendered as text with `<mark>`, never
+  as HTML.
 - Imports: `ImportsService` (`/api/v1/imports`) and `SettingsService` (`/api/v1/settings/llm`). Nothing
   becomes an item until a candidate is approved. API keys are never entered or shown in the app: the
   settings page only says whether `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` is set on the server.
@@ -76,13 +85,14 @@ npm run typecheck         # strict tsc with --noUnusedLocals --noUnusedParameter
 
 ```
 src/app/
-  core/models/       typed API payloads and tree helpers (subject, topic, item, media, progress, stats, import, llm-settings)
-  core/services/     one HTTP service per API area (subjects, topics, items, media, progress, stats, imports, settings),
-                     api-error.ts
+  core/models/       typed API payloads and tree helpers (subject, topic, item, media, progress, stats, import, llm-settings, search)
+  core/services/     one HTTP service per API area (subjects, topics, items, media, progress, stats, imports, settings,
+                     search), theme.service.ts, toast.service.ts, api-error.ts
   features/          routed pages: dashboard/, subjects/, subject-detail/, item-view/, item-editor/, study/,
-                     import/, settings/
+                     import/, settings/, search/
   shared/components/ shell/, dialog/ (native <dialog>), confirm-dialog/, topic-tree/, rich-content/, progress-bar/,
-                     coming-soon/ (placeholder for later phases)
+                     toast-host/,
+                     coming-soon/ (placeholder for planned pages; unused now)
   shared/editor/     Quill image upload and paste handling (quill-media.ts), editor HTML helpers (editor-html.ts)
 ```
 

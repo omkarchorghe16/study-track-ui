@@ -63,8 +63,8 @@ function purify(html: string): string {
     app-rich-content .rich-content{font-size:.92rem;line-height:1.7;overflow-wrap:anywhere}
     app-rich-content .rich-content :is(p,ul,ol,pre,blockquote,figure){margin:0 0 .8em}
     app-rich-content .rich-content :is(pre,code){font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.84em}
-    app-rich-content .rich-content pre{max-width:100%;padding:12px;border-radius:7px;background:#17171a;overflow:auto;white-space:pre;overflow-wrap:normal}
-    app-rich-content .rich-content code{padding:1px 4px;border-radius:4px;background:#ffffff12}
+    app-rich-content .rich-content pre{max-width:100%;padding:12px;border-radius:7px;background:var(--code-bg);color:#e6e6ea;overflow:auto;white-space:pre;overflow-wrap:normal}
+    app-rich-content .rich-content code{padding:1px 4px;border-radius:4px;background:var(--overlay-2)}
     app-rich-content .rich-content pre code{padding:0;background:none}
     app-rich-content .rich-content blockquote{padding-left:12px;border-left:3px solid var(--border);color:var(--muted)}
     app-rich-content .rich-content a{color:var(--primary);text-decoration:underline}

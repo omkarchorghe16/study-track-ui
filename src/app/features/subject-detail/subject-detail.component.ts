@@ -11,6 +11,7 @@ import { ItemsService } from '../../core/services/items.service';
 import { ProgressService } from '../../core/services/progress.service';
 import { SubjectsService } from '../../core/services/subjects.service';
 import { TopicsService } from '../../core/services/topics.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProgressBarComponent } from '../../shared/components/progress-bar/progress-bar.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
@@ -37,6 +38,7 @@ const PAGE_SIZE = 20;
 export class SubjectDetailComponent {
   private readonly subjectsService = inject(SubjectsService);
   private readonly topicsService = inject(TopicsService);
+  private readonly toastService = inject(ToastService);
   private readonly itemsService = inject(ItemsService);
   private readonly progressService = inject(ProgressService);
   private readonly router = inject(Router);
@@ -73,7 +75,6 @@ export class SubjectDetailComponent {
   protected readonly page = signal(0);
 
   protected readonly completionBusy = signal(false);
-  protected readonly completionError = signal<string | null>(null);
 
   protected readonly topicDialogOpen = signal(false);
   protected readonly editingTopic = signal<TopicNode | null>(null);
@@ -104,16 +105,16 @@ export class SubjectDetailComponent {
 
   protected toggleTopicComplete(topic: TopicNode): void {
     this.completionBusy.set(true);
-    this.completionError.set(null);
     this.progressService.setTopicCompleted(topic.id, !topic.completed).subscribe({
       next: () => {
         this.completionBusy.set(false);
+        this.toastService.showSuccess(topic.completed ? `“${topic.name}” is no longer marked complete.` : `“${topic.name}” marked complete.`);
         this.reloadTree();
         this.loadSubject(this.id(), false);
       },
       error: (error: unknown) => {
         this.completionBusy.set(false);
-        this.completionError.set(apiErrorMessage(error, 'Could not update the topic.'));
+        this.toastService.showError(apiErrorMessage(error, 'Could not update the topic.'));
       },
     });
   }
@@ -149,6 +150,7 @@ export class SubjectDetailComponent {
   }
 
   protected onTopicSaved(topicId: number): void {
+    this.toastService.showSuccess(this.editingTopic() ? 'Topic saved.' : 'Topic created.');
     this.topicDialogOpen.set(false);
     this.reloadTree(() => this.selectTopic(topicId));
   }
@@ -168,6 +170,7 @@ export class SubjectDetailComponent {
       next: () => {
         this.deleteBusy.set(false);
         this.deletingTopic.set(null);
+        this.toastService.showSuccess(`Topic “${topic.name}” deleted.`);
         this.reloadTree(() => {
           if (!this.selectedTopic()) {
             this.router.navigate([], { queryParams: { topic: null }, replaceUrl: true });

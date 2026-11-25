@@ -48,12 +48,12 @@ const CONFIDENCE_LEVELS = [1, 2, 3, 4, 5] as const;
   styles: [`
     .progress-panel{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 16px;margin-bottom:14px}
     .group{display:flex;align-items:center;gap:4px}
-    .btn.active.not_started{border-color:#92929d;color:var(--text)}
-    .btn.active.learning{border-color:var(--primary);background:#4b8cff26;color:#9dc0ff}
-    .btn.active.done{border-color:var(--positive);background:#35be8426;color:#56d69c}
+    .btn.active.not_started{border-color:var(--muted);color:var(--text)}
+    .btn.active.learning{border-color:var(--primary);background:#4b8cff26;color:var(--info-text)}
+    .btn.active.done{border-color:var(--positive);background:#35be8426;color:var(--positive-text)}
     .label{color:var(--muted);font-size:.74rem;margin-right:4px}
-    .star{font-size:1.05rem;color:#55555c}.star.on{color:#f5c84c}
-    .bookmark.on{border-color:#f5c84c88;color:#f5c84c}
+    .star{font-size:1.05rem;color:var(--border-strong)}.star.on{color:var(--warning-text)}
+    .bookmark.on{border-color:#f5c84c88;color:var(--warning-text)}
     .review-info{margin:0;font-size:.74rem;flex-basis:100%}
     .form-error{flex-basis:100%;margin:0}
   `],

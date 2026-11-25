@@ -12,7 +12,7 @@ import { Component, computed, input } from '@angular/core';
   `,
   styles: [`
     :host{display:block}
-    .track{height:var(--bar-height,6px);border-radius:99px;background:#ffffff14;overflow:hidden}
+    .track{height:var(--bar-height,6px);border-radius:99px;background:var(--overlay-2);overflow:hidden}
     .fill{height:100%;border-radius:inherit;background:var(--primary);transition:width .3s ease}
     .fill.complete{background:var(--positive)}
     @media (prefers-reduced-motion:reduce){.fill{transition:none}}

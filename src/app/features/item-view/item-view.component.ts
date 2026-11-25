@@ -5,6 +5,7 @@ import { ItemProgress, StudyItem, difficultyLabel, itemTypeLabel } from '../../c
 import { flattenTopics } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ProgressService } from '../../core/services/progress.service';
 import { SubjectsService } from '../../core/services/subjects.service';
 import { TopicsService } from '../../core/services/topics.service';
@@ -94,6 +95,7 @@ import { ItemProgressPanelComponent } from './item-progress-panel.component';
 })
 export class ItemViewComponent {
   private readonly itemsService = inject(ItemsService);
+  private readonly toastService = inject(ToastService);
   private readonly progressService = inject(ProgressService);
   private readonly subjectsService = inject(SubjectsService);
   private readonly topicsService = inject(TopicsService);
@@ -141,6 +143,7 @@ export class ItemViewComponent {
       next: () => {
         this.deleteBusy.set(false);
         this.confirmingDelete.set(false);
+        this.toastService.showSuccess(`Item “${item.title}” deleted.`);
         this.router.navigate(['/subjects', item.subjectId], { queryParams: { topic: item.topicId } });
       },
       error: (error: unknown) => {

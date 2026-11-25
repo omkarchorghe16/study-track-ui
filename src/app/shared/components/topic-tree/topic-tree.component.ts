@@ -54,7 +54,7 @@ import { TopicNode } from '../../../core/models/topic.models';
   `,
   styles: [`
     .tree-list{list-style:none;margin:0;padding:0}.tree-list .tree-list{padding-left:16px}
-    .tree-row{display:flex;align-items:center;gap:2px;border-radius:7px}.tree-row:hover,.tree-row.selected{background:#ffffff0a}
+    .tree-row{display:flex;align-items:center;gap:2px;border-radius:7px}.tree-row:hover,.tree-row.selected{background:var(--overlay-1)}
     .tree-row.selected .topic-name{color:var(--accent)}
     .toggle-spacer{width:28px;flex:none}.toggle{flex:none}
     .topic-name{flex:1;min-width:0;display:flex;justify-content:space-between;gap:8px;padding:7px 6px;border:0;background:none;color:var(--text);font-size:.84rem;text-align:left}

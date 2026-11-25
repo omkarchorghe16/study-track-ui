@@ -67,16 +67,18 @@
       @if (ratingError()) { <p class="form-error" role="alert">{{ ratingError() }}</p> }
 
       @if (!revealed()) {
-        <button type="button" class="btn btn-primary reveal" (click)="revealed.set(true)">Show answer</button>
+        <button type="button" class="btn btn-primary reveal" aria-keyshortcuts="Space" (click)="revealed.set(true)">Show answer <kbd>Space</kbd></button>
       } @else {
         <div class="ratings" role="group" aria-label="How well did you know it?">
-          @for (result of results; track result.value) {
-            <button type="button" class="btn rating result-{{ result.value.toLowerCase() }}" [disabled]="rating()" (click)="rate(result.value)">
-              <span>{{ result.label }}</span><small>{{ intervalLabel(result.value, card) }}</small>
+          @for (result of results; track result.value; let index = $index) {
+            <button type="button" class="btn rating result-{{ result.value.toLowerCase() }}" [disabled]="rating()" (click)="rate(result.value)"
+                    [attr.aria-keyshortcuts]="index + 1">
+              <span><kbd>{{ index + 1 }}</kbd> {{ result.label }}</span><small>{{ intervalLabel(result.value, card) }}</small>
             </button>
           }
         </div>
       }
+      <p class="shortcut-hint text-muted">Keyboard: <kbd>Space</kbd> or <kbd>Enter</kbd> shows the answer, <kbd>1</kbd>–<kbd>4</kbd> rate it.</p>
       <a class="item-link" [routerLink]="['/items', card.id]">Open the full item</a>
     }
   </section>

@@ -46,7 +46,7 @@ import { DailyReviewCount } from '../../core/models/stats.models';
     .max-label{position:absolute;top:0;right:0;color:var(--muted);font-size:.66rem}
     .columns{list-style:none;margin:0;padding:0;height:100%;display:flex;align-items:flex-end;gap:2px}
     .slot{position:relative;flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;outline-offset:1px}
-    .slot:hover,.slot:focus-visible{background:#ffffff0a}
+    .slot:hover,.slot:focus-visible{background:var(--overlay-1)}
     .column{width:100%;max-width:24px;min-height:2px;border-radius:4px 4px 0 0;background:var(--primary)}
     .tip-label{position:absolute;left:50%;transform:translate(-50%,-2px);color:var(--text);font-size:.66rem}
     .tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:2;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--panel-raised);color:var(--text);font-size:.7rem;white-space:nowrap;pointer-events:none;display:none}

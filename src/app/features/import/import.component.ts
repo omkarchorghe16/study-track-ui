@@ -14,6 +14,7 @@ import { TopicOption, flattenTopics } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ImportsService } from '../../core/services/imports.service';
 import { SubjectsService } from '../../core/services/subjects.service';
+import { ToastService } from '../../core/services/toast.service';
 import { TopicsService } from '../../core/services/topics.service';
 import { ProgressBarComponent } from '../../shared/components/progress-bar/progress-bar.component';
 import { RichContentComponent } from '../../shared/components/rich-content/rich-content.component';
@@ -38,6 +39,7 @@ export class ImportComponent {
   private readonly subjectsService = inject(SubjectsService);
   private readonly topicsService = inject(TopicsService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Query parameter ?job= to open an import. */
@@ -64,8 +66,6 @@ export class ImportComponent {
   protected readonly selectedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly actionBusy = signal(false);
-  protected readonly actionError = signal<string | null>(null);
-  protected readonly actionMessage = signal<string | null>(null);
   protected readonly editing = signal<ImportCandidate | null>(null);
 
   protected readonly running = computed(() => {
@@ -210,6 +210,7 @@ export class ImportComponent {
 
   protected onCandidateSaved(updated: ImportCandidate): void {
     this.editing.set(null);
+    this.toastService.showSuccess('Candidate saved.');
     this.candidates.update((list) => list.map((candidate) => (candidate.id === updated.id ? updated : candidate)));
   }
 
@@ -219,8 +220,6 @@ export class ImportComponent {
     this.jobError.set(null);
     this.candidates.set([]);
     this.selectedIds.set(new Set());
-    this.actionMessage.set(null);
-    this.actionError.set(null);
     this.polling = timer(0, POLL_INTERVAL_MS).pipe(
       switchMap(() => this.importsService.getImport(jobId)),
       takeWhile((job) => isImportRunning(job.status), true),
@@ -272,20 +271,18 @@ export class ImportComponent {
 
   private runAction(): void {
     this.actionBusy.set(true);
-    this.actionError.set(null);
-    this.actionMessage.set(null);
   }
 
   private finishAction(job: ImportJob, message: string): void {
     this.actionBusy.set(false);
     this.currentJob.set(job);
-    this.actionMessage.set(message);
+    this.toastService.showSuccess(message);
     this.loadReview(job);
   }
 
   private failAction(message: string): void {
     this.actionBusy.set(false);
-    this.actionError.set(message);
+    this.toastService.showError(message);
   }
 }
 

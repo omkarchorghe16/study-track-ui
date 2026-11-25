@@ -4,12 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { QuillEditorComponent } from 'ngx-quill';
 import type Quill from 'quill';
 import { Observable, concatMap, finalize, from, map, switchMap } from 'rxjs';
-import { DIFFICULTIES, Difficulty, ITEM_TYPES, ItemRequest, ItemType, StudyItem } from '../../core/models/item.models';
+import { DIFFICULTIES, Difficulty, DuplicateItem, ITEM_TYPES, ItemRequest, ItemType, StudyItem } from '../../core/models/item.models';
 import { TopicOption, flattenTopics } from '../../core/models/topic.models';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '../../core/models/media.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
 import { MediaService } from '../../core/services/media.service';
+import { ToastService } from '../../core/services/toast.service';
 import { TopicsService } from '../../core/services/topics.service';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
 import { altTextFor, labelEditor, parseTags, readEditorHtml, toStoredHtml } from '../../shared/editor/editor-html';
@@ -36,6 +37,7 @@ export class ItemEditorComponent {
   private readonly topicsService = inject(TopicsService);
   private readonly mediaService = inject(MediaService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   /** Route parameter :id when editing. */
   readonly id = input<number | undefined, unknown>(undefined, { transform: optionalNumber });
@@ -52,6 +54,12 @@ export class ItemEditorComponent {
   protected readonly loadError = signal<string | null>(null);
   protected readonly saveError = signal<string | null>(null);
   protected readonly saving = signal(false);
+  /** Items with the same question, shown before saving; empty when there are none. */
+  protected readonly duplicates = signal<DuplicateItem[]>([]);
+  /** topicId|title|question of the item as loaded (edits that keep it skip the duplicate check). */
+  private loadedQuestionKey: string | null = null;
+  private pendingQuestionKey: string | null = null;
+  private confirmedQuestionKey: string | null = null;
   protected readonly uploadsInProgress = signal(0);
   protected readonly uploadError = signal<string | null>(null);
   protected readonly uploadStatus = computed(() => {
@@ -83,6 +91,11 @@ export class ItemEditorComponent {
   }
 
 
+  /**
+   * Saves the item. A new item, or an edit that changes the title or question, is first checked for
+   * items with the same question in the subject; if there are any, the user sees them and can save
+   * anyway. A failed check does not block saving.
+   */
   protected save(): void {
     const title = this.title.trim();
     if (!title || this.selectedTopicId === null || this.saving() || this.uploadsInProgress() > 0) {
@@ -99,15 +112,45 @@ export class ItemEditorComponent {
       difficulty: this.difficulty,
       tags: parseTags(this.tagsText),
     };
-    const itemId = this.id();
+    const questionKey = `${request.topicId}|${title}|${request.questionHtml ?? ''}`;
     this.saving.set(true);
     this.saveError.set(null);
+    if (questionKey === this.loadedQuestionKey || questionKey === this.confirmedQuestionKey) {
+      this.submitItem(request);
+      return;
+    }
+    const itemId = this.id() ?? null;
+    this.itemsService.findDuplicateItems({ topicId: request.topicId, title, questionHtml: request.questionHtml, itemId })
+      .subscribe({
+        next: (duplicates) => {
+          if (duplicates.length === 0) {
+            this.submitItem(request);
+            return;
+          }
+          this.saving.set(false);
+          this.duplicates.set(duplicates);
+          this.pendingQuestionKey = questionKey;
+        },
+        error: () => this.submitItem(request),
+      });
+  }
+
+  /** "Save anyway" after the duplicate warning. */
+  protected saveDespiteDuplicates(): void {
+    this.confirmedQuestionKey = this.pendingQuestionKey;
+    this.duplicates.set([]);
+    this.save();
+  }
+
+  private submitItem(request: ItemRequest): void {
+    const itemId = this.id();
     const save$ = itemId === undefined
       ? this.itemsService.createItem(request)
       : this.itemsService.replaceItem(itemId, request);
     save$.subscribe({
       next: (saved) => {
         this.saving.set(false);
+        this.toastService.showSuccess(itemId === undefined ? 'Item created.' : 'Item saved.');
         this.router.navigate(['/items', saved.id]);
       },
       error: (error: unknown) => {
@@ -195,6 +238,7 @@ export class ItemEditorComponent {
     this.answerHtml = item.answerHtml ?? null;
     this.notesHtml = item.notesHtml ?? null;
     this.tagsText = item.tags.join(', ');
+    this.loadedQuestionKey = `${item.topicId}|${item.title}|${item.questionHtml ?? ''}`;
   }
 }
 
