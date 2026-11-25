@@ -1,0 +1,11 @@
+# Written by dev-standards/sync.sh. Do not edit; run sync.sh instead.
+source https://github.com/omkarchorghe16/dev-standards
+commit 82f1e5b
+stacks common angular
+file .claude/skills/angular-coding-standards/SKILL.md
+file .github/instructions/angular-coding-standards.instructions.md
+file .github/instructions/angular-ui-and-accessibility.instructions.md
+file .github/instructions/change-hygiene.instructions.md
+file .github/skills/angular-component/SKILL.md
+file .github/skills/angular-http-service/SKILL.md
+file .github/skills/angular-testing/SKILL.md

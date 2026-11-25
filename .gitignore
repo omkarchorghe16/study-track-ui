@@ -1,0 +1,30 @@
+# See https://docs.github.com/getting-started/getting-started-with-git/ignoring-files for more information about ignoring files.
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log*
+
+# IDEs and editors
+/.idea
+/.vscode
+*.sublime-workspace
+
+# Angular
+.angular
+
+# Misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+/testem.log
+
+# System files
+.DS_Store
+Thumbs.db
