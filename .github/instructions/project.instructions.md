@@ -37,6 +37,7 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
   Quill's theme CSS is a global style in `angular.json`; `quill-delta` is an allowed CommonJS dependency.
 - The catalog (`features/catalog`, `CatalogService`) is shared and read-only for users; only the panel shown when `UsersService.getCurrentUser()` says `admin` may upload a CSV. Never hide an admin-only action by UI alone: the API answers 403 and the message is shown.
 - Audio uses the browser's Web Speech API through `SpeechService` only (no external TTS service, no API key); stop it when the reading source goes away.
+- AI explanations come from the API as plain-text JSON (`ExplanationContent`); draw them with `ExplanationViewComponent` only, never as HTML, and keep the code example going through `RichContentComponent` after escaping. Never call an AI provider or hold a key in the app; show the API's message on 409 and 424.
 - Popups on the subject page: add one question (`QuickQuestionDialogComponent`, plain text only) and import a CSV (`QuestionsCsvDialogComponent`, polls the import job like the import page and stops when it finishes or the dialog closes). Keep rich text, images and code in `ItemEditorComponent`.
 - Reference pages: `SubjectsComponent` (list + dialog), `SubjectDetailComponent` (two panes, selection
   in the query string), `ItemEditorComponent` (form with editors).

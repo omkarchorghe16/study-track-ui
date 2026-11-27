@@ -23,7 +23,7 @@ import { TopicNode } from '../../../core/models/topic.models';
               } @else {
                 <span class="toggle-spacer" aria-hidden="true"></span>
               }
-              <button type="button" class="topic-name" [attr.aria-current]="node.id === selectedId() ? 'true' : null"
+              <button type="button" class="topic-name" [attr.title]="node.name" [attr.aria-current]="node.id === selectedId() ? 'true' : null"
                       (click)="selected.emit(node.id)">
                 <span class="name-text">
                   @if (node.completed) {

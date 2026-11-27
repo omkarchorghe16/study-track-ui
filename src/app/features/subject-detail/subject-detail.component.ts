@@ -1,14 +1,17 @@
 import { Component, DestroyRef, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Subscription, switchMap, takeWhile, timer } from 'rxjs';
 import {
   DIFFICULTIES, Difficulty, ITEM_STATUSES, ItemPage, ItemStatus, ItemSummary, StudyItem, difficultyLabel, itemStatusLabel,
   itemTypeLabel,
 } from '../../core/models/item.models';
+import { ExplanationBatch } from '../../core/models/explanation.models';
 import { ImportJob } from '../../core/models/import.models';
 import { Subject } from '../../core/models/subject.models';
 import { TopicNode, findTopicNode } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
+import { ExplanationsService } from '../../core/services/explanations.service';
 import { ItemsService } from '../../core/services/items.service';
 import { ProgressService } from '../../core/services/progress.service';
 import { SpeechService } from '../../core/services/speech.service';
@@ -20,11 +23,13 @@ import { ProgressBarComponent } from '../../shared/components/progress-bar/progr
 import { RichContentComponent } from '../../shared/components/rich-content/rich-content.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
 import { TopicTreeComponent } from '../../shared/components/topic-tree/topic-tree.component';
+import { ExplanationPanelComponent } from './explanation-panel.component';
 import { QuestionsCsvDialogComponent } from './questions-csv-dialog.component';
 import { QuickQuestionDialogComponent } from './quick-question-dialog.component';
 import { TopicDialogComponent } from './topic-dialog.component';
 
 const PAGE_SIZE = 20;
+const BATCH_POLL_MS = 2000;
 
 /**
  * Two-pane subject page: topic tree on the left, the selected topic's items on the right. With no topic
@@ -39,7 +44,7 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [
     ShellComponent, RouterLink, FormsModule, TopicTreeComponent, TopicDialogComponent, ConfirmDialogComponent,
-    ProgressBarComponent, RichContentComponent, QuickQuestionDialogComponent, QuestionsCsvDialogComponent,
+    ProgressBarComponent, RichContentComponent, QuickQuestionDialogComponent, QuestionsCsvDialogComponent, ExplanationPanelComponent,
   ],
   templateUrl: './subject-detail.component.html',
   styleUrl: './subject-detail.component.scss',
@@ -52,6 +57,7 @@ export class SubjectDetailComponent {
   private readonly progressService = inject(ProgressService);
   private readonly router = inject(Router);
   protected readonly speechService = inject(SpeechService);
+  private readonly explanationsService = inject(ExplanationsService);
 
   /** Route parameter :id. */
   readonly id = input.required({ transform: numberAttribute });
@@ -99,6 +105,11 @@ export class SubjectDetailComponent {
   protected readonly savingCompletion = signal<ReadonlySet<number>>(new Set());
   protected readonly confirmingSubjectDelete = signal(false);
 
+  /** The background "explain all" run of this subject; null until the first status arrives. */
+  protected readonly batch = signal<ExplanationBatch | null>(null);
+  /** Bumped when the run wrote explanations, so open answers look for theirs again. */
+  protected readonly explanationReload = signal(0);
+  private batchPolling: Subscription | null = null;
   protected readonly quickQuestionOpen = signal(false);
   protected readonly csvDialogOpen = signal(false);
   protected readonly topicDialogOpen = signal(false);
@@ -109,10 +120,16 @@ export class SubjectDetailComponent {
   protected readonly deleteError = signal<string | null>(null);
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.speechService.stop());
+    inject(DestroyRef).onDestroy(() => {
+      this.speechService.stop();
+      this.batchPolling?.unsubscribe();
+    });
     effect(() => {
       const subjectId = this.id();
-      untracked(() => this.loadSubject(subjectId));
+      untracked(() => {
+        this.loadSubject(subjectId);
+        this.loadBatchStatus();
+      });
     });
     effect(() => {
       const topic = this.selectedTopic();
@@ -285,6 +302,49 @@ export class SubjectDetailComponent {
     return subject
       ? `“${subject.name}”, its ${subject.topicCount} topics and ${subject.itemCount} items will be deleted. This cannot be undone.`
       : '';
+  }
+
+  // ---- Explain all with AI ----
+
+  protected explainAll(): void {
+    this.explanationsService.startSubjectExplanations(this.id()).subscribe({
+      next: (run) => this.followBatch(run),
+      error: (error: unknown) => this.toastService.showError(apiErrorMessage(error, 'Could not start the explanations.')),
+    });
+  }
+
+  private loadBatchStatus(): void {
+    this.batchPolling?.unsubscribe();
+    this.batch.set(null);
+    this.explanationsService.getSubjectExplanationStatus(this.id()).subscribe({
+      // A run that was started earlier keeps being followed; failing to ask just hides the button.
+      next: (run) => this.followBatch(run),
+      error: () => undefined,
+    });
+  }
+
+  /** Shows the run and, while it is running, asks for its progress every two seconds. */
+  private followBatch(first: ExplanationBatch): void {
+    this.batchPolling?.unsubscribe();
+    this.batch.set(first);
+    if (first.state !== 'RUNNING') {
+      return;
+    }
+    this.batchPolling = timer(BATCH_POLL_MS, BATCH_POLL_MS).pipe(
+      switchMap(() => this.explanationsService.getSubjectExplanationStatus(this.id())),
+      takeWhile((run) => run.state === 'RUNNING', true),
+    ).subscribe({
+      next: (run) => {
+        this.batch.set(run);
+        if (run.state !== 'RUNNING') {
+          this.explanationReload.update((key) => key + 1);
+          if (run.state === 'COMPLETED') {
+            this.toastService.showSuccess(`${run.completed} explanations written.`);
+          }
+        }
+      },
+      error: () => undefined,
+    });
   }
 
   // ---- Add questions ----
