@@ -136,25 +136,23 @@
                       @if (item.bookmarked) { <span class="bookmark" aria-label="Bookmarked">★</span> }
                       {{ item.title }}
                     </button>
-                    <div class="row-actions">
-                      <a class="btn btn-small" [routerLink]="['/items', item.id]" [attr.aria-label]="'Open ' + item.title">Open</a>
-                      <button type="button" class="btn btn-small btn-danger" [attr.aria-label]="'Delete ' + item.title"
-                              (click)="askDeleteItem(item)">Delete</button>
-                    </div>
-                  </div>
-                  <div class="item-meta">
-                    @if (!selectedTopic()) { <span class="topic-path">{{ topicPath(item.topicId) }}</span> }
-                    <span class="status-pill" [class]="'status-pill ' + item.status.toLowerCase()">{{ itemStatusLabel(item.status) }}</span>
-                    <span class="type">{{ itemTypeLabel(item.itemType) }}</span>
-                    <span class="badge" [class]="item.difficulty.toLowerCase()">{{ difficultyLabel(item.difficulty) }}</span>
-                    @for (tag of item.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
-                    @if (!item.hasAnswer && item.itemType === 'QUESTION') { <span class="no-answer">No answer yet</span> }
+                    <span class="item-badges">
+                      <span [class]="'status-pill ' + item.status.toLowerCase()">{{ itemStatusLabel(item.status) }}</span>
+                      <span class="badge" [class]="item.difficulty.toLowerCase()">{{ difficultyLabel(item.difficulty) }}</span>
+                      @if (item.itemType !== 'QUESTION') { <span class="type">{{ itemTypeLabel(item.itemType) }}</span> }
+                      @for (tag of item.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
+                      @if (!item.hasAnswer && item.itemType === 'QUESTION') { <span class="no-answer">No answer yet</span> }
+                    </span>
+                    <button type="button" class="icon-btn delete-btn" [attr.aria-label]="'Delete ' + item.title" [attr.title]="'Delete'"
+                            (click)="askDeleteItem(item)">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                           stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v6M14 11v6"/></svg>
+                    </button>
                   </div>
                   @if (expandedItemId() === item.id) {
                     <div class="answer" [id]="'answer-' + item.id">
                       @if (itemDetails().get(item.id); as detail) {
-                        @if (detail.questionHtml) { <h3>Question</h3><app-rich-content [html]="detail.questionHtml"></app-rich-content> }
-                        <h3>Answer</h3><app-rich-content [html]="detail.answerHtml"></app-rich-content>
+                        <app-rich-content [html]="detail.answerHtml"></app-rich-content>
                         @if (detail.notesHtml) { <h3>Notes</h3><app-rich-content [html]="detail.notesHtml"></app-rich-content> }
                       } @else if (detailError()) {
                         <p class="form-error" role="alert">{{ detailError() }}</p>

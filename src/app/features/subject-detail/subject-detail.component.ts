@@ -7,7 +7,7 @@ import {
 } from '../../core/models/item.models';
 import { ImportJob } from '../../core/models/import.models';
 import { Subject } from '../../core/models/subject.models';
-import { TopicNode, findTopicNode, flattenTopics } from '../../core/models/topic.models';
+import { TopicNode, findTopicNode } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
 import { ProgressService } from '../../core/services/progress.service';
@@ -87,7 +87,6 @@ export class SubjectDetailComponent {
   protected readonly completionBusy = signal(false);
 
   /** "Parent › Child" path of every topic, for the topic label in the all-items list. */
-  protected readonly topicPaths = computed(() => new Map(flattenTopics(this.tree()).map((option) => [option.id, option.path])));
 
   protected readonly expandedItemId = signal<number | null>(null);
   protected readonly itemDetails = signal<ReadonlyMap<number, StudyItem>>(new Map());
@@ -162,10 +161,6 @@ export class SubjectDetailComponent {
 
   protected showAllItems(): void {
     this.router.navigate([], { queryParams: { topic: null }, replaceUrl: true });
-  }
-
-  protected topicPath(topicId: number): string {
-    return this.topicPaths().get(topicId) ?? '—';
   }
 
   // ---- Question and answer in place ----
