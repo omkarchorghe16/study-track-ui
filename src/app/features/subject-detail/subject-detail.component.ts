@@ -409,7 +409,7 @@ export class SubjectDetailComponent {
       page: this.page(),
       size: PAGE_SIZE,
     };
-    const request = topic ? this.itemsService.listTopicItems(topic.id, filters) : this.itemsService.listSubjectItems(this.id(), filters);
+    const request = topic ? this.itemsService.listTopicItems(topic.id, filters, true) : this.itemsService.listSubjectItems(this.id(), filters);
     const requestId = ++this.itemsRequestId;
     request.subscribe({
       next: (page) => {

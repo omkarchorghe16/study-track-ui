@@ -9,8 +9,10 @@ const ITEMS_URL = '/api/v1/items';
 export class ItemsService {
   private readonly http = inject(HttpClient);
 
-  listTopicItems(topicId: number, filters: ItemFilters = {}): Observable<ItemPage> {
-    return this.http.get<ItemPage>(`/api/v1/topics/${topicId}/items`, { params: filterParams(filters) });
+  /** The topic's items; with `includeSubtopics` also those of all its subtopics, ordered by topic, then item. */
+  listTopicItems(topicId: number, filters: ItemFilters = {}, includeSubtopics = false): Observable<ItemPage> {
+    const params = filterParams(filters).set('includeSubtopics', includeSubtopics);
+    return this.http.get<ItemPage>(`/api/v1/topics/${topicId}/items`, { params });
   }
 
   /** Items of every topic of the subject, ordered by topic, then item. */

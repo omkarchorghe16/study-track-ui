@@ -50,7 +50,7 @@
       <section class="card items-pane" aria-labelledby="items-heading">
         @if (selectedTopic(); as topic) {
           <div class="pane-header">
-            <h2 id="items-heading">{{ topic.name }}</h2>
+            <h2 id="items-heading">{{ topic.name }}@if (topic.children.length) { <span class="with-sub">· with subtopics</span> }</h2>
             <div class="actions-row">
               <button type="button" class="btn btn-small" [class.btn-success]="topic.completed" [attr.aria-pressed]="topic.completed"
                       [disabled]="completionBusy()" (click)="toggleTopicComplete(topic)">
@@ -108,12 +108,7 @@
         } @else if (items(); as page) {
           @if (page.items.length === 0) {
             <div class="empty-state">
-              <p>{{ statusFilter || difficultyFilter || tagFilter ? 'No items match these filters.' : selectedTopic() ? 'No items in this topic yet.' : 'No questions in this subject yet.' }}</p>
-              @if (selectedTopic(); as topic) {
-                @if (topic.children.length && topic.totalItemCount > topic.itemCount) {
-                  <p>Its subtopics hold {{ topic.totalItemCount - topic.itemCount }} items.</p>
-                }
-              }
+              <p>{{ statusFilter || difficultyFilter || tagFilter ? 'No items match these filters.' : selectedTopic() ? 'No questions in this topic or its subtopics yet.' : 'No questions in this subject yet.' }}</p>
               @if (!statusFilter && !difficultyFilter && !tagFilter) {
                 <div class="actions-row empty-actions">
                   @if (selectedTopic(); as topic) {
