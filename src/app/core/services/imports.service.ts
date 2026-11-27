@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  ApproveResponse, CandidateRequest, CandidateSelectionRequest, ImportCandidate, ImportJob, RejectResponse,
+  ApproveResponse, CandidateSelectionRequest, ImportCandidate, ImportJob,
 } from '../models/import.models';
 
 const IMPORTS_URL = '/api/v1/imports';
@@ -31,15 +31,8 @@ export class ImportsService {
     return this.http.get<ImportCandidate[]>(`${IMPORTS_URL}/${importId}/candidates`);
   }
 
-  updateCandidate(importId: number, candidateId: number, request: CandidateRequest): Observable<ImportCandidate> {
-    return this.http.put<ImportCandidate>(`${IMPORTS_URL}/${importId}/candidates/${candidateId}`, request);
-  }
-
+  /** Saves questions an older import left unsaved; new imports save everything themselves. */
   approveCandidates(importId: number, request: CandidateSelectionRequest): Observable<ApproveResponse> {
     return this.http.post<ApproveResponse>(`${IMPORTS_URL}/${importId}/approve`, request);
-  }
-
-  rejectCandidates(importId: number, request: CandidateSelectionRequest): Observable<RejectResponse> {
-    return this.http.post<RejectResponse>(`${IMPORTS_URL}/${importId}/reject`, request);
   }
 }

@@ -10,19 +10,12 @@ export class ItemsService {
   private readonly http = inject(HttpClient);
 
   listTopicItems(topicId: number, filters: ItemFilters = {}): Observable<ItemPage> {
-    let params = new HttpParams()
-      .set('page', filters.page ?? 0)
-      .set('size', filters.size ?? 20);
-    if (filters.status) {
-      params = params.set('status', filters.status);
-    }
-    if (filters.difficulty) {
-      params = params.set('difficulty', filters.difficulty);
-    }
-    if (filters.tag?.trim()) {
-      params = params.set('tag', filters.tag.trim());
-    }
-    return this.http.get<ItemPage>(`/api/v1/topics/${topicId}/items`, { params });
+    return this.http.get<ItemPage>(`/api/v1/topics/${topicId}/items`, { params: filterParams(filters) });
+  }
+
+  /** Items of every topic of the subject, ordered by topic, then item. */
+  listSubjectItems(subjectId: number, filters: ItemFilters = {}): Observable<ItemPage> {
+    return this.http.get<ItemPage>(`/api/v1/subjects/${subjectId}/items`, { params: filterParams(filters) });
   }
 
   getItem(itemId: number): Observable<StudyItem> {
@@ -45,4 +38,20 @@ export class ItemsService {
   findDuplicateItems(request: DuplicateCheckRequest): Observable<DuplicateItem[]> {
     return this.http.post<DuplicateItem[]>(`${ITEMS_URL}/duplicate-check`, request);
   }
+}
+
+function filterParams(filters: ItemFilters): HttpParams {
+  let params = new HttpParams()
+    .set('page', filters.page ?? 0)
+    .set('size', filters.size ?? 20);
+  if (filters.status) {
+    params = params.set('status', filters.status);
+  }
+  if (filters.difficulty) {
+    params = params.set('difficulty', filters.difficulty);
+  }
+  if (filters.tag?.trim()) {
+    params = params.set('tag', filters.tag.trim());
+  }
+  return params;
 }

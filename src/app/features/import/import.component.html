@@ -3,7 +3,7 @@
     <header class="page-header">
       <div>
         <h1>Import notes</h1>
-        <p>Upload a Word, PDF, Markdown or text file. The LLM finds questions and answers; you review them before anything is saved.</p>
+        <p>Upload a Word, PDF, Markdown or text file and the LLM finds the questions and answers, or upload a CSV of questions and answers. Every question is saved to the subject straight away.</p>
       </div>
       @if (job() !== undefined) {
         <a class="btn" routerLink="/import">＋ New import</a>
@@ -34,10 +34,19 @@
           </label>
           <label class="field"><span>File</span>
             <input type="file" name="file" [accept]="acceptedTypes" (change)="chooseFile($event)" aria-describedby="file-hint">
-            <span class="field-hint" id="file-hint">.docx, .pdf, .md or .txt, up to 20 MB.</span>
+            <span class="field-hint" id="file-hint">.docx, .pdf, .md, .txt or .csv, up to 20 MB.</span>
           </label>
         </div>
         @if (fileError()) { <p class="form-error" role="alert">{{ fileError() }}</p> }
+        <details class="csv-help">
+          <summary>CSV format</summary>
+          <p>Column 1 is the question, column 2 the answer, and an optional column 3 the topic (use <code>&gt;</code> for subtopics).
+            A first row such as <code>question,answer,topic</code> is skipped. Rows without a topic go to a topic named after the file.
+            Save from Excel or Google Sheets as <strong>CSV UTF-8</strong>. No LLM is used. Rows that repeat a question already in the subject are skipped.</p>
+          <pre>question,answer,topic
+What is a HashMap?,A hash table keyed by hashCode(),Collections
+"What does final do, on a variable?",It can be assigned only once,Java &gt; Keywords</pre>
+        </details>
         <div class="actions-row">
           <button type="submit" class="btn btn-primary" [disabled]="starting() || !selectedFile() || !typedSubjectName()">
             {{ starting() ? 'Uploading…' : 'Start import' }}
@@ -55,7 +64,7 @@
               <a class="recent-name" [routerLink]="['/import']" [queryParams]="{ job: recent.id }">{{ recent.fileName }}</a>
               <span class="text-muted">{{ subjectNameFor(recent.subjectId) }} · {{ recent.createdAt | date: 'MMM d, h:mm a' }}</span>
               <span class="status-pill" [class.done]="recent.status === 'COMPLETED'" [class.failed]="recent.status === 'FAILED'">{{ statusLabels[recent.status] }}</span>
-              @if (recent.candidates.open) { <span class="text-muted">{{ recent.candidates.open }} to review</span> }
+              @if (recent.candidates.approved) { <span class="text-muted">{{ recent.candidates.approved }} saved</span> }
             </li>
           }
         </ul>
@@ -69,7 +78,7 @@
             <span class="status-pill" [class.done]="current.status === 'COMPLETED'" [class.failed]="current.status === 'FAILED'">{{ statusLabels[current.status] }}</span>
           </div>
           <p class="text-muted job-meta">
-            {{ subjectName() }} · {{ current.llmProvider ?? '—' }} {{ current.llmModel ?? '' }} ·
+            {{ subjectName() }} · {{ current.fileType === 'CSV' ? 'CSV, no LLM' : (current.llmProvider ?? '—') + ' ' + (current.llmModel ?? '') }} ·
             {{ current.inputTokens | number }} input / {{ current.outputTokens | number }} output tokens
           </p>
           @if (running()) {
@@ -85,32 +94,33 @@
           }
           @if (reviewable() || current.candidates.total) {
             <p class="text-muted">
-              {{ current.candidates.total }} found · {{ current.candidates.open }} to review ·
-              {{ current.candidates.approved }} approved · {{ current.candidates.rejected }} rejected
+              {{ current.candidates.total }} found · {{ current.candidates.approved }} saved to the subject ·
+              {{ current.candidates.duplicates }} already in the subject (skipped)
+              @if (current.candidates.open) { · {{ current.candidates.open }} not saved yet }
             </p>
           }
         </div>
 
         @if (candidatesLoading()) { <p class="text-muted" role="status">Loading candidates…</p> }
         @if (candidates().length) {
-          <h2 class="section-heading">Review</h2>
+          <h2 class="section-heading">Saved questions</h2>
+          <p class="text-muted list-hint">Tick a question once you have gone through it; it is saved as completed.
+            {{ completedCount() }} of {{ current.candidates.approved }} completed.</p>
           @if (openCandidates().length) {
             <div class="actions-row bulk-bar">
-              <label class="check"><input type="checkbox" [checked]="allSelected()" (change)="toggleAll()"> Select all open</label>
-              <button type="button" class="btn btn-success" [disabled]="actionBusy() || !selectedOpenIds().length"
-                      (click)="approve({ candidateIds: selectedOpenIds() })">Approve selected ({{ selectedOpenIds().length }})</button>
-              <button type="button" class="btn btn-danger" [disabled]="actionBusy() || !selectedOpenIds().length"
-                      (click)="reject({ candidateIds: selectedOpenIds() })">Reject selected</button>
-              <button type="button" class="btn" [disabled]="actionBusy()" (click)="approve({ all: true })">Approve all open</button>
+              <button type="button" class="btn btn-primary" [disabled]="actionBusy()" (click)="saveRemaining()">
+                Save the {{ openCandidates().length }} questions not saved yet
+              </button>
             </div>
           }
           <ul class="candidate-list">
             @for (candidate of candidates(); track candidate.id) {
-              <li class="card candidate" [class.closed]="!isCandidateOpen(candidate.status)">
+              <li class="card candidate" [class.closed]="candidate.status !== 'APPROVED'">
                 <div class="candidate-top">
-                  @if (isCandidateOpen(candidate.status)) {
-                    <input type="checkbox" [checked]="selectedIds().has(candidate.id)" (change)="toggleSelected(candidate.id)"
-                           [attr.aria-label]="'Select ' + candidate.title">
+                  @if (candidate.status === 'APPROVED') {
+                    <input type="checkbox" [checked]="candidate.questionStatus === 'DONE'" [disabled]="savingCompletion().has(candidate.id)"
+                           (change)="setCompleted(candidate, $any($event.target).checked)"
+                           [attr.aria-label]="'Mark ' + candidate.title + ' as completed'">
                   }
                   <button type="button" class="candidate-title" [attr.aria-expanded]="expandedIds().has(candidate.id)"
                           (click)="toggleExpanded(candidate.id)">{{ candidate.title }}</button>
@@ -119,15 +129,18 @@
                   <span class="tag-chip">{{ typeLabel(candidate) }}</span>
                   @if (candidate.difficulty) { <span [class]="'badge ' + candidate.difficulty.toLowerCase()">{{ candidate.difficulty.toLowerCase() }}</span> }
                   <span class="text-muted">{{ topicLabel(candidate) }}</span>
-                  @if (candidate.confidence !== undefined) {
-                    <span class="badge info" [class.low]="candidate.confidence < 0.6">{{ candidate.confidence * 100 | number: '1.0-0' }}% sure</span>
+                  @if (candidate.questionStatus === 'DONE') { <span class="status-pill done">Completed</span> }
+                  @if (candidate.status === 'DUPLICATE') {
+                    @if (candidate.duplicateItemId) {
+                      <a class="badge warn" [routerLink]="['/items', candidate.duplicateItemId]">Already in the subject, not saved again</a>
+                    } @else {
+                      <span class="badge warn">Repeated in this file, not saved again</span>
+                    }
+                  } @else if (candidate.status === 'REJECTED') {
+                    <span class="status-pill">not saved</span>
+                  } @else if (candidate.status !== 'APPROVED') {
+                    <span class="badge warn">Not saved yet</span>
                   }
-                  @if (candidate.duplicateItemId) {
-                    <a class="badge warn" [routerLink]="['/items', candidate.duplicateItemId]">Already saved</a>
-                  } @else if (candidate.duplicateOfCandidateId) {
-                    <span class="badge warn">Repeated</span>
-                  }
-                  @if (candidate.status !== 'PENDING') { <span class="status-pill" [class.done]="candidate.status === 'APPROVED'">{{ candidate.status.toLowerCase() }}</span> }
                   @for (tag of candidate.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
                 </div>
                 @if (expandedIds().has(candidate.id)) {
@@ -137,25 +150,18 @@
                     @if (candidate.notesHtml) { <h3>Notes</h3><app-rich-content [html]="candidate.notesHtml"></app-rich-content> }
                   </div>
                 }
-                <div class="actions-row">
-                  @if (isCandidateOpen(candidate.status)) {
-                    <button type="button" class="btn btn-small" (click)="editing.set(candidate)" [attr.aria-label]="'Edit ' + candidate.title">Edit</button>
-                    <button type="button" class="btn btn-small btn-success" [disabled]="actionBusy()" (click)="approve({ candidateIds: [candidate.id] })"
-                            [attr.aria-label]="'Approve ' + candidate.title">Approve</button>
-                    <button type="button" class="btn btn-small btn-danger" [disabled]="actionBusy()" (click)="reject({ candidateIds: [candidate.id] })"
-                            [attr.aria-label]="'Reject ' + candidate.title">Reject</button>
-                  } @else if (candidate.createdItemId) {
-                    <a class="btn btn-small" [routerLink]="['/items', candidate.createdItemId]">Open item</a>
-                  }
-                </div>
+                @if (candidate.createdItemId) {
+                  <div class="actions-row">
+                    <a class="btn btn-small" [routerLink]="['/items', candidate.createdItemId]" [attr.aria-label]="'Open ' + candidate.title">Open</a>
+                    <a class="btn btn-small" [routerLink]="['/items', candidate.createdItemId, 'edit']" [attr.aria-label]="'Edit ' + candidate.title">Edit</a>
+                  </div>
+                }
               </li>
             }
           </ul>
-          @if (current.status === 'COMPLETED') {
-            <a class="btn btn-primary" [routerLink]="['/subjects', current.subjectId]">Go to {{ subjectName() }}</a>
-          }
+          <a class="btn btn-primary" [routerLink]="['/subjects', current.subjectId]">Go to {{ subjectName() }}</a>
         } @else if (reviewable() && !candidatesLoading()) {
-          <p class="card empty-state">The LLM found no questions in this file.</p>
+          <p class="card empty-state">No questions were found in this file.</p>
         }
       } @else if (!jobError()) {
         <p class="text-muted" role="status">Loading the import…</p>
@@ -163,6 +169,4 @@
     }
   </section>
 
-  <app-candidate-dialog [open]="!!editing()" [importId]="currentJob()?.id ?? 0" [candidate]="editing()" [topicOptions]="topicOptions()"
-                        (saved)="onCandidateSaved($event)" (closed)="editing.set(null)"></app-candidate-dialog>
 </app-shell>

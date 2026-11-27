@@ -20,7 +20,7 @@ import { SubjectDialogComponent } from './subject-dialog.component';
         <header class="page-header">
           <div>
             <h1>Subjects</h1>
-            <p>Courses and prep tracks. Open one to work with its topics and questions.</p>
+            <p>Courses and prep tracks. Click a subject to see all its questions and answers.</p>
           </div>
           <button type="button" class="btn btn-primary" (click)="openCreate()">＋ New subject</button>
         </header>
@@ -80,7 +80,10 @@ import { SubjectDialogComponent } from './subject-dialog.component';
   `,
   styles: [`
     .subject-grid{list-style:none;margin:0 0 24px;padding:0;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
-    .subject-card{display:flex;flex-direction:column;gap:8px;padding:18px}
+    .subject-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:18px;cursor:pointer}.subject-card:hover{border-color:var(--accent)}
+    /* The name link covers the card, so a click anywhere opens the subject; the buttons stay above it. */
+    .subject-link::after{content:'';position:absolute;inset:0;border-radius:inherit}
+    .subject-card .actions-row{position:relative;z-index:1}
     .subject-link{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1rem}.subject-link:hover .subject-name{color:var(--accent)}
     .subject-icon{font-size:1.4rem}.subject-description{margin:0;color:var(--muted);font-size:.82rem;flex:1}
     .subject-counts{margin:0;color:var(--muted);font-size:.75rem}

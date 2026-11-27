@@ -2,10 +2,11 @@ import { Component, computed, effect, inject, input, numberAttribute, signal, un
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
-  DIFFICULTIES, Difficulty, ITEM_STATUSES, ItemPage, ItemStatus, difficultyLabel, itemStatusLabel, itemTypeLabel,
+  DIFFICULTIES, Difficulty, ITEM_STATUSES, ItemPage, ItemStatus, ItemSummary, StudyItem, difficultyLabel, itemStatusLabel,
+  itemTypeLabel,
 } from '../../core/models/item.models';
 import { Subject } from '../../core/models/subject.models';
-import { TopicNode, findTopicNode } from '../../core/models/topic.models';
+import { TopicNode, findTopicNode, flattenTopics } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
 import { ProgressService } from '../../core/services/progress.service';
@@ -14,6 +15,7 @@ import { TopicsService } from '../../core/services/topics.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ProgressBarComponent } from '../../shared/components/progress-bar/progress-bar.component';
+import { RichContentComponent } from '../../shared/components/rich-content/rich-content.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
 import { TopicTreeComponent } from '../../shared/components/topic-tree/topic-tree.component';
 import { TopicDialogComponent } from './topic-dialog.component';
@@ -21,7 +23,10 @@ import { TopicDialogComponent } from './topic-dialog.component';
 const PAGE_SIZE = 20;
 
 /**
- * Two-pane subject page: topic tree on the left, the selected topic's items on the right.
+ * Two-pane subject page: topic tree on the left, the selected topic's items on the right. With no topic
+ * selected, the right pane lists every item of the subject. Clicking an item shows its question and answer
+ * in place; items, topics and the subject itself can be deleted here.
+ *
  * The selected topic is kept in the URL (`?topic=`), so back navigation returns to it, and is saved as
  * the subject's resume point. Topics can be marked complete; items can be filtered by status.
  */
@@ -30,7 +35,7 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [
     ShellComponent, RouterLink, FormsModule, TopicTreeComponent, TopicDialogComponent, ConfirmDialogComponent,
-    ProgressBarComponent,
+    ProgressBarComponent, RichContentComponent,
   ],
   templateUrl: './subject-detail.component.html',
   styleUrl: './subject-detail.component.scss',
@@ -73,8 +78,22 @@ export class SubjectDetailComponent {
   protected difficultyFilter: Difficulty | null = null;
   protected tagFilter = '';
   protected readonly page = signal(0);
+  /** Ignores answers of item requests that a later request replaced (topic switched mid-load). */
+  private itemsRequestId = 0;
 
   protected readonly completionBusy = signal(false);
+
+  /** "Parent › Child" path of every topic, for the topic label in the all-items list. */
+  protected readonly topicPaths = computed(() => new Map(flattenTopics(this.tree()).map((option) => [option.id, option.path])));
+
+  protected readonly expandedItemId = signal<number | null>(null);
+  protected readonly itemDetails = signal<ReadonlyMap<number, StudyItem>>(new Map());
+  protected readonly detailError = signal<string | null>(null);
+
+  protected readonly deletingItem = signal<ItemSummary | null>(null);
+  /** Items whose completed checkbox is being saved. */
+  protected readonly savingCompletion = signal<ReadonlySet<number>>(new Set());
+  protected readonly confirmingSubjectDelete = signal(false);
 
   protected readonly topicDialogOpen = signal(false);
   protected readonly editingTopic = signal<TopicNode | null>(null);
@@ -134,6 +153,124 @@ export class SubjectDetailComponent {
   protected goToPage(page: number): void {
     this.page.set(page);
     this.loadItems(this.selectedTopic());
+  }
+
+  protected showAllItems(): void {
+    this.router.navigate([], { queryParams: { topic: null }, replaceUrl: true });
+  }
+
+  protected topicPath(topicId: number): string {
+    return this.topicPaths().get(topicId) ?? '—';
+  }
+
+  // ---- Question and answer in place ----
+
+  protected toggleItem(item: ItemSummary): void {
+    if (this.expandedItemId() === item.id) {
+      this.expandedItemId.set(null);
+      return;
+    }
+    this.expandedItemId.set(item.id);
+    this.detailError.set(null);
+    if (this.itemDetails().has(item.id)) {
+      return;
+    }
+    this.itemsService.getItem(item.id).subscribe({
+      next: (detail) => this.itemDetails.update((details) => new Map(details).set(detail.id, detail)),
+      error: (error: unknown) => this.detailError.set(apiErrorMessage(error, 'Could not load the answer.')),
+    });
+  }
+
+  /** Ticked: the user went through the question, saved as DONE; unticked: back to NOT_STARTED. */
+  protected setCompleted(item: ItemSummary, completed: boolean): void {
+    if (this.savingCompletion().has(item.id)) {
+      return;
+    }
+    const status: ItemStatus = completed ? 'DONE' : 'NOT_STARTED';
+    this.savingCompletion.update((ids) => new Set(ids).add(item.id));
+    const finish = () => this.savingCompletion.update((ids) => {
+      const next = new Set(ids);
+      next.delete(item.id);
+      return next;
+    });
+    this.progressService.updateItemProgress(item.id, { status }).subscribe({
+      next: (progress) => {
+        finish();
+        this.items.update((page) => page && {
+          ...page,
+          items: page.items.map((each) => (each.id === item.id ? { ...each, status: progress.status } : each)),
+        });
+        // Progress bars and "% done" of the subject and its topics follow the change.
+        this.loadSubject(this.id());
+      },
+      error: (error: unknown) => {
+        finish();
+        this.toastService.showError(apiErrorMessage(error, 'Could not save the completed mark.'));
+      },
+    });
+  }
+
+  // ---- Deleting items and the subject ----
+
+  protected askDeleteItem(item: ItemSummary): void {
+    this.deleteError.set(null);
+    this.deletingItem.set(item);
+  }
+
+  protected confirmDeleteItem(): void {
+    const item = this.deletingItem();
+    if (!item) {
+      return;
+    }
+    this.deleteBusy.set(true);
+    this.itemsService.deleteItem(item.id).subscribe({
+      next: () => {
+        this.deleteBusy.set(false);
+        this.deletingItem.set(null);
+        if (this.expandedItemId() === item.id) {
+          this.expandedItemId.set(null);
+        }
+        this.toastService.showSuccess(`“${item.title}” deleted.`);
+        this.loadSubject(this.id());
+        this.loadItems(this.selectedTopic());
+      },
+      error: (error: unknown) => {
+        this.deleteBusy.set(false);
+        this.deleteError.set(apiErrorMessage(error, 'Could not delete the item.'));
+      },
+    });
+  }
+
+  protected askDeleteSubject(): void {
+    this.deleteError.set(null);
+    this.confirmingSubjectDelete.set(true);
+  }
+
+  protected confirmDeleteSubject(): void {
+    const subject = this.subject();
+    if (!subject) {
+      return;
+    }
+    this.deleteBusy.set(true);
+    this.subjectsService.deleteSubject(subject.id).subscribe({
+      next: () => {
+        this.deleteBusy.set(false);
+        this.confirmingSubjectDelete.set(false);
+        this.toastService.showSuccess(`Subject “${subject.name}” deleted.`);
+        this.router.navigate(['/subjects']);
+      },
+      error: (error: unknown) => {
+        this.deleteBusy.set(false);
+        this.deleteError.set(apiErrorMessage(error, 'Could not delete the subject.'));
+      },
+    });
+  }
+
+  protected deleteSubjectMessage(): string {
+    const subject = this.subject();
+    return subject
+      ? `“${subject.name}”, its ${subject.topicCount} topics and ${subject.itemCount} items will be deleted. This cannot be undone.`
+      : '';
   }
 
   // ---- Topic dialog ----
@@ -220,25 +357,31 @@ export class SubjectDetailComponent {
     });
   }
 
+  /** The selected topic's items, or every item of the subject when no topic is selected. */
   private loadItems(topic: TopicNode | null): void {
     this.itemsError.set(null);
-    if (!topic) {
-      this.items.set(null);
-      return;
-    }
     this.itemsLoading.set(true);
-    this.itemsService.listTopicItems(topic.id, {
+    const filters = {
       status: this.statusFilter,
       difficulty: this.difficultyFilter,
       tag: this.tagFilter,
       page: this.page(),
       size: PAGE_SIZE,
-    }).subscribe({
+    };
+    const request = topic ? this.itemsService.listTopicItems(topic.id, filters) : this.itemsService.listSubjectItems(this.id(), filters);
+    const requestId = ++this.itemsRequestId;
+    request.subscribe({
       next: (page) => {
+        if (requestId !== this.itemsRequestId) {
+          return;
+        }
         this.items.set(page);
         this.itemsLoading.set(false);
       },
       error: (error: unknown) => {
+        if (requestId !== this.itemsRequestId) {
+          return;
+        }
         this.itemsLoading.set(false);
         this.itemsError.set(apiErrorMessage(error, 'Could not load the items.'));
       },
