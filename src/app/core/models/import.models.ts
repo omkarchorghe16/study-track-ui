@@ -1,21 +1,24 @@
-import { Difficulty, ItemType } from './item.models';
+import { Difficulty, ItemStatus, ItemType } from './item.models';
 import { LlmProvider } from './llm-settings.models';
 
-export type ImportFileType = 'DOCX' | 'PDF' | 'MD' | 'TXT';
-/** UPLOADED → PARSING → EXTRACTING → READY_FOR_REVIEW → COMPLETED; FAILED on error. */
+export type ImportFileType = 'DOCX' | 'PDF' | 'MD' | 'TXT' | 'CSV';
+/**
+ * UPLOADED → PARSING → EXTRACTING → COMPLETED (questions saved); FAILED on error, keeping the questions found before
+ * it. READY_FOR_REVIEW only when some questions could not be saved (older imports).
+ */
 export type ImportJobStatus = 'UPLOADED' | 'PARSING' | 'EXTRACTING' | 'READY_FOR_REVIEW' | 'COMPLETED' | 'FAILED';
-/** PENDING and EDITED still wait for review. */
-export type CandidateStatus = 'PENDING' | 'EDITED' | 'APPROVED' | 'REJECTED';
+/** APPROVED: saved as a question. DUPLICATE: the subject already had it. PENDING/EDITED: not saved yet (older imports). */
+export type CandidateStatus = 'PENDING' | 'EDITED' | 'APPROVED' | 'REJECTED' | 'DUPLICATE';
 
 /** File extensions and size the API accepts for imports. */
-export const IMPORT_EXTENSIONS: readonly string[] = ['.docx', '.pdf', '.md', '.markdown', '.txt'];
+export const IMPORT_EXTENSIONS: readonly string[] = ['.docx', '.pdf', '.md', '.markdown', '.txt', '.csv'];
 export const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
 
 export const IMPORT_STATUS_LABELS: Record<ImportJobStatus, string> = {
   UPLOADED: 'Uploaded',
   PARSING: 'Reading the file',
   EXTRACTING: 'Extracting questions',
-  READY_FOR_REVIEW: 'Ready for review',
+  READY_FOR_REVIEW: 'Some questions not saved',
   COMPLETED: 'Completed',
   FAILED: 'Failed',
 };
@@ -28,12 +31,13 @@ export function isCandidateOpen(status: CandidateStatus): boolean {
   return status === 'PENDING' || status === 'EDITED';
 }
 
-/** `open` counts PENDING and EDITED candidates. */
+/** `approved`: saved as questions; `duplicates`: already in the subject; `open`: not saved yet. */
 export interface CandidateCounts {
   total: number;
   open: number;
   approved: number;
   rejected: number;
+  duplicates: number;
 }
 
 /** Response of the /api/v1/imports endpoints. */
@@ -43,6 +47,7 @@ export interface ImportJob {
   fileName: string;
   fileType: ImportFileType;
   status: ImportJobStatus;
+  /** Missing for CSV imports, which are read without an LLM. */
   llmProvider?: LlmProvider;
   llmModel?: string;
   totalChunks: number;
@@ -59,7 +64,7 @@ export interface ImportJob {
   updatedAt: string;
 }
 
-/** One question the LLM found. HTML is sanitised by the API. */
+/** One question an import found. HTML is sanitised by the API. */
 export interface ImportCandidate {
   id: number;
   chunkIndex: number;
@@ -80,21 +85,10 @@ export interface ImportCandidate {
   createdItemId?: number;
   /** An existing item of the subject with the same question. */
   duplicateItemId?: number;
-  /** An earlier open candidate of this import with the same question. */
+  /** An earlier candidate of this import with the same question. */
   duplicateOfCandidateId?: number;
-}
-
-/** Body of PUT /imports/{id}/candidates/{cid}. targetTopicId wins over topicPath. */
-export interface CandidateRequest {
-  itemType: ItemType;
-  title: string;
-  questionHtml: string | null;
-  answerHtml: string | null;
-  notesHtml: string | null;
-  difficulty: Difficulty | null;
-  tags: string[];
-  topicPath: string | null;
-  targetTopicId: number | null;
+  /** The user's status of the saved question (createdItemId); DONE when ticked as completed. */
+  questionStatus?: ItemStatus;
 }
 
 /** The listed candidates, or every open one when `all` is true. */
@@ -107,10 +101,5 @@ export interface ApproveResponse {
   approvedCount: number;
   createdTopicCount: number;
   createdItemIds: number[];
-  job: ImportJob;
-}
-
-export interface RejectResponse {
-  rejectedCount: number;
   job: ImportJob;
 }

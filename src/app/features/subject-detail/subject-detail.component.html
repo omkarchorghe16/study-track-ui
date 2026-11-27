@@ -7,9 +7,12 @@
         <p>{{ subject()?.description || 'Pick a topic to see its items.' }}</p>
       </div>
       @if (subject(); as current) {
-        @if (current.itemCount) {
-          <a class="btn btn-primary" [routerLink]="['/study', current.id]">Study flashcards</a>
-        }
+        <div class="actions-row header-actions">
+          @if (current.itemCount) {
+            <a class="btn btn-primary" [routerLink]="['/study', current.id]">Study flashcards</a>
+          }
+          <button type="button" class="btn btn-danger" (click)="askDeleteSubject()">Delete subject</button>
+        </div>
       }
     </header>
     @if (subject(); as current) {
@@ -30,6 +33,8 @@
           <h2 id="topics-heading">Topics</h2>
           <button type="button" class="btn btn-small" (click)="openNewTopic(null)">＋ Topic</button>
         </div>
+        <button type="button" class="all-items" [class.selected]="!selectedTopic()" [attr.aria-current]="!selectedTopic() ? 'true' : null"
+                (click)="showAllItems()">All questions · {{ subject()?.itemCount ?? 0 }}</button>
         @if (loadingTree() && tree().length === 0) {
           <p class="text-muted" role="status">Loading topics…</p>
         } @else if (tree().length === 0) {
@@ -59,83 +64,114 @@
                 @if (topic.allItemsDone && !topic.completed) { · every item is done, you can mark the topic complete }</span>
             </div>
           }
+        } @else {
+          <div class="pane-header">
+            <h2 id="items-heading">All questions</h2>
+            <a class="btn btn-small" routerLink="/import">Import notes</a>
+          </div>
+        }
 
-          <form class="filters" (ngSubmit)="applyFilters()" aria-label="Filter items">
-            <label class="field"><span>Status</span>
-              <select name="status" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
-                <option [ngValue]="null">Any</option>
-                @for (status of statuses; track status.value) {
-                  <option [ngValue]="status.value">{{ status.label }}</option>
-                }
-              </select>
-            </label>
-            <label class="field"><span>Difficulty</span>
-              <select name="difficulty" [(ngModel)]="difficultyFilter" (ngModelChange)="applyFilters()">
-                <option [ngValue]="null">Any</option>
-                @for (difficulty of difficulties; track difficulty.value) {
-                  <option [ngValue]="difficulty.value">{{ difficulty.label }}</option>
-                }
-              </select>
-            </label>
-            <label class="field"><span>Tag</span>
-              <input name="tag" [(ngModel)]="tagFilter" placeholder="e.g. jvm" autocomplete="off">
-            </label>
-            <div class="filter-actions">
-              <button type="submit" class="btn btn-small">Apply</button>
-              @if (statusFilter || difficultyFilter || tagFilter) {
-                <button type="button" class="btn btn-small btn-ghost" (click)="clearFilters()">Clear</button>
+        <form class="filters" (ngSubmit)="applyFilters()" aria-label="Filter items">
+          <label class="field"><span>Status</span>
+            <select name="status" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+              <option [ngValue]="null">Any</option>
+              @for (status of statuses; track status.value) {
+                <option [ngValue]="status.value">{{ status.label }}</option>
               }
-            </div>
-          </form>
+            </select>
+          </label>
+          <label class="field"><span>Difficulty</span>
+            <select name="difficulty" [(ngModel)]="difficultyFilter" (ngModelChange)="applyFilters()">
+              <option [ngValue]="null">Any</option>
+              @for (difficulty of difficulties; track difficulty.value) {
+                <option [ngValue]="difficulty.value">{{ difficulty.label }}</option>
+              }
+            </select>
+          </label>
+          <label class="field"><span>Tag</span>
+            <input name="tag" [(ngModel)]="tagFilter" placeholder="e.g. jvm" autocomplete="off">
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="btn btn-small">Apply</button>
+            @if (statusFilter || difficultyFilter || tagFilter) {
+              <button type="button" class="btn btn-small btn-ghost" (click)="clearFilters()">Clear</button>
+            }
+          </div>
+        </form>
 
-          @if (itemsError()) {
-            <p class="load-error" role="alert">{{ itemsError() }}</p>
-          } @else if (itemsLoading() && !items()) {
-            <p class="text-muted" role="status">Loading items…</p>
-          } @else if (items(); as page) {
-            @if (page.items.length === 0) {
-              <div class="empty-state">
-                <p>{{ statusFilter || difficultyFilter || tagFilter ? 'No items match these filters.' : 'No items in this topic yet.' }}</p>
+        @if (itemsError()) {
+          <p class="load-error" role="alert">{{ itemsError() }}</p>
+        } @else if (itemsLoading() && !items()) {
+          <p class="text-muted" role="status">Loading items…</p>
+        } @else if (items(); as page) {
+          @if (page.items.length === 0) {
+            <div class="empty-state">
+              <p>{{ statusFilter || difficultyFilter || tagFilter ? 'No items match these filters.' : selectedTopic() ? 'No items in this topic yet.' : 'No questions in this subject yet.' }}</p>
+              @if (selectedTopic(); as topic) {
                 @if (topic.children.length && topic.totalItemCount > topic.itemCount) {
                   <p>Its subtopics hold {{ topic.totalItemCount - topic.itemCount }} items.</p>
                 }
-                @if (!statusFilter && !difficultyFilter && !tagFilter) {
-                  <div class="actions-row empty-actions">
+              }
+              @if (!statusFilter && !difficultyFilter && !tagFilter) {
+                <div class="actions-row empty-actions">
+                  @if (selectedTopic(); as topic) {
                     <a class="btn btn-primary btn-small" routerLink="/items/new" [queryParams]="{ topicId: topic.id }">＋ New item</a>
-                    <a class="btn btn-small" routerLink="/import">Import notes</a>
-                  </div>
-                }
-              </div>
-            } @else {
-              <ul class="item-list" [attr.aria-busy]="itemsLoading()">
-                @for (item of page.items; track item.id) {
-                  <li class="item-row">
-                    <a class="item-title" [routerLink]="['/items', item.id]">
+                  }
+                  <a class="btn btn-small" routerLink="/import">Import notes</a>
+                </div>
+              }
+            </div>
+          } @else {
+            <ul class="item-list" [attr.aria-busy]="itemsLoading()">
+              @for (item of page.items; track item.id) {
+                <li class="item-row">
+                  <div class="item-top">
+                    <input type="checkbox" class="done-check" [checked]="item.status === 'DONE'" [disabled]="savingCompletion().has(item.id)"
+                           (change)="setCompleted(item, $any($event.target).checked)" [attr.aria-label]="'Mark ' + item.title + ' as completed'">
+                    <button type="button" class="item-title" [attr.aria-expanded]="expandedItemId() === item.id"
+                            [attr.aria-controls]="'answer-' + item.id" (click)="toggleItem(item)">
+                      <span class="chevron" aria-hidden="true">{{ expandedItemId() === item.id ? '▾' : '▸' }}</span>
                       @if (item.bookmarked) { <span class="bookmark" aria-label="Bookmarked">★</span> }
                       {{ item.title }}
-                    </a>
-                    <div class="item-meta">
-                      <span class="status-pill" [class]="'status-pill ' + item.status.toLowerCase()">{{ itemStatusLabel(item.status) }}</span>
-                      <span class="type">{{ itemTypeLabel(item.itemType) }}</span>
-                      <span class="badge" [class]="item.difficulty.toLowerCase()">{{ difficultyLabel(item.difficulty) }}</span>
-                      @for (tag of item.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
-                      @if (!item.hasAnswer && item.itemType === 'QUESTION') { <span class="no-answer">No answer yet</span> }
+                    </button>
+                    <div class="row-actions">
+                      <a class="btn btn-small" [routerLink]="['/items', item.id]" [attr.aria-label]="'Open ' + item.title">Open</a>
+                      <button type="button" class="btn btn-small btn-danger" [attr.aria-label]="'Delete ' + item.title"
+                              (click)="askDeleteItem(item)">Delete</button>
                     </div>
-                  </li>
-                }
-              </ul>
-              @if (page.totalPages > 1) {
-                <nav class="pager" aria-label="Item pages">
-                  <button type="button" class="btn btn-small" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">Previous</button>
-                  <span>Page {{ page.page + 1 }} of {{ page.totalPages }}</span>
-                  <button type="button" class="btn btn-small" [disabled]="page.page + 1 >= page.totalPages" (click)="goToPage(page.page + 1)">Next</button>
-                </nav>
+                  </div>
+                  <div class="item-meta">
+                    @if (!selectedTopic()) { <span class="topic-path">{{ topicPath(item.topicId) }}</span> }
+                    <span class="status-pill" [class]="'status-pill ' + item.status.toLowerCase()">{{ itemStatusLabel(item.status) }}</span>
+                    <span class="type">{{ itemTypeLabel(item.itemType) }}</span>
+                    <span class="badge" [class]="item.difficulty.toLowerCase()">{{ difficultyLabel(item.difficulty) }}</span>
+                    @for (tag of item.tags; track tag) { <span class="tag-chip">{{ tag }}</span> }
+                    @if (!item.hasAnswer && item.itemType === 'QUESTION') { <span class="no-answer">No answer yet</span> }
+                  </div>
+                  @if (expandedItemId() === item.id) {
+                    <div class="answer" [id]="'answer-' + item.id">
+                      @if (itemDetails().get(item.id); as detail) {
+                        @if (detail.questionHtml) { <h3>Question</h3><app-rich-content [html]="detail.questionHtml"></app-rich-content> }
+                        <h3>Answer</h3><app-rich-content [html]="detail.answerHtml"></app-rich-content>
+                        @if (detail.notesHtml) { <h3>Notes</h3><app-rich-content [html]="detail.notesHtml"></app-rich-content> }
+                      } @else if (detailError()) {
+                        <p class="form-error" role="alert">{{ detailError() }}</p>
+                      } @else {
+                        <p class="text-muted" role="status">Loading the answer…</p>
+                      }
+                    </div>
+                  }
+                </li>
               }
+            </ul>
+            @if (page.totalPages > 1) {
+              <nav class="pager" aria-label="Item pages">
+                <button type="button" class="btn btn-small" [disabled]="page.page === 0" (click)="goToPage(page.page - 1)">Previous</button>
+                <span>Page {{ page.page + 1 }} of {{ page.totalPages }}</span>
+                <button type="button" class="btn btn-small" [disabled]="page.page + 1 >= page.totalPages" (click)="goToPage(page.page + 1)">Next</button>
+              </nav>
             }
           }
-        } @else {
-          <h2 id="items-heading" class="sr-only">Items</h2>
-          <div class="empty-state"><p>{{ tree().length ? 'Select a topic on the left to see its items.' : 'Add a topic first, then add questions and notes to it.' }}</p></div>
         }
       </section>
     </div>
@@ -145,4 +181,9 @@
                     [initialParentId]="newTopicParentId()" (saved)="onTopicSaved($event.id)" (closed)="topicDialogOpen.set(false)"></app-topic-dialog>
   <app-confirm-dialog [open]="!!deletingTopic()" heading="Delete topic?" [message]="deleteTopicMessage()" [busy]="deleteBusy()"
                       [error]="deleteError()" (confirmed)="confirmDeleteTopic()" (cancelled)="deletingTopic.set(null)"></app-confirm-dialog>
+  <app-confirm-dialog [open]="!!deletingItem()" heading="Delete question?" [busy]="deleteBusy()" [error]="deleteError()"
+                      [message]="'“' + (deletingItem()?.title ?? '') + '” will be deleted. This cannot be undone.'"
+                      (confirmed)="confirmDeleteItem()" (cancelled)="deletingItem.set(null)"></app-confirm-dialog>
+  <app-confirm-dialog [open]="confirmingSubjectDelete()" heading="Delete subject?" [message]="deleteSubjectMessage()" [busy]="deleteBusy()"
+                      [error]="deleteError()" (confirmed)="confirmDeleteSubject()" (cancelled)="confirmingSubjectDelete.set(false)"></app-confirm-dialog>
 </app-shell>

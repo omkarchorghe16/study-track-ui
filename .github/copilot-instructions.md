@@ -3,7 +3,7 @@
 ## Product context
 StudyTrack is a study tracker: subjects, topics and Q&A items with rich content and images, topic
 completion, a "continue where you left off" pointer, flashcard reviews, and LLM-assisted import of
-Word/PDF notes that the user reviews before saving. Its visual language follows Folio Pro:
+Word/PDF notes and CSV import, saved to the subject at once. Its visual language follows Folio Pro:
 charcoal/dark surfaces, restrained borders, muted gray text, bright blue actions and small
 warm-yellow accents.
 

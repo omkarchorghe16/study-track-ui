@@ -20,12 +20,12 @@ Phase 7 (accounts and deployment) is not started.
 | Route | Screen | State |
 |---|---|---|
 | `/dashboard` (also `/`) | Overall progress ring, "Continue where you left off", today's due and new cards with the streak, progress per subject, 30-day review chart (`GET /api/v1/stats/overview`, `GET /api/v1/sessions/resume`) | live |
-| `/subjects` | Subject cards (icon, description, counts, progress bar, Study link) with create, edit, archive and delete | live |
-| `/subjects/:id?topic=` | Subject progress; topic tree with % and check marks (add, rename, move, delete topics); the selected topic's items with status, filtered by status, difficulty and tag, 20 per page; "Mark topic complete" | live |
+| `/subjects` | Subject cards (icon, description, counts, progress bar, Study link) with create, edit, archive and delete; click anywhere on a card to open the subject | live |
+| `/subjects/:id?topic=` | Subject progress; topic tree with % and check marks (add, rename, move, delete topics); "All questions" (every item of the subject, with its topic) when no topic is selected, otherwise the selected topic's items; status, difficulty and tag filters, 20 per page; a checkbox per question marks it completed (`DONE`, unticked by default; progress bars follow); click a question to show its answer in place; delete a question or the whole subject (with confirmation); "Mark topic complete" | live |
 | `/items/:id` | Reading view: status (Not started / Learning / Done), confidence stars, bookmark, question, answer, notes, tags, previous/next in the topic, edit and delete. Opening it saves the resume point | live |
 | `/items/new?topicId=`, `/items/:id/edit` | Quill editors for question, answer and notes (images by button, paste or drop); title, type, difficulty, topic and tags. Before saving a new question (or a changed one) it lists items of the subject with the same question and offers "Save anyway" (`POST /api/v1/items/duplicate-check`) | live |
 | `/study/:subjectId` | Flashcards: cards due today, then new ones; show the answer, rate Again / Hard / Good / Easy (`GET /api/v1/reviews/due`, `POST /api/v1/reviews`). Keys: Space or Enter shows the answer, 1–4 rate it | live |
-| `/import`, `/import?job=` | Import wizard: pick a subject from the list or type a new name (created when the import starts), choose a .docx/.pdf/.md/.txt file (≤20 MB, checked before upload), follow the progress (polled every 2.5 s), then review the candidates: preview, edit (Quill editors, type, difficulty, tags, topic or topic path), approve or reject one by one, selected or all. Duplicates of saved items start unselected. Recent imports are listed | live |
+| `/import`, `/import?job=` | Import: pick a subject from the list or type a new name (created when the import starts), choose a .docx/.pdf/.md/.txt file (read by the LLM) or a .csv (question, answer, optional topic; read directly, no LLM) (≤20 MB, checked before upload) and follow the progress (polled every 2.5 s). Every question is saved to the subject straight away; questions the subject already has are skipped and shown as duplicates. The saved questions are listed with their answers and an unticked "completed" checkbox (ticked = `DONE` in `question_progress`), Open and Edit. Recent imports are listed | live |
 | `/settings` | LLM for imports: provider (Anthropic, OpenAI, Groq, Ollama), model, base URL, on/off, whether the server has the API key, Test connection, Save. Appearance: Dark (default), Light or same as the system | live |
 | `/search?q=&subject=` | Full-text search across all items (or one subject): every word must match as a prefix; results show subject › topic, a snippet with the matching words highlighted, type, difficulty and status; 20 at a time (`GET /api/v1/items/search`) | live |
 
@@ -68,8 +68,8 @@ Start `study-track-api` first (see its README). If it is not running, pages say
   blocks stay dark in both themes.
 - Search snippets come from the API as `{text, match}` parts and are rendered as text with `<mark>`, never
   as HTML.
-- Imports: `ImportsService` (`/api/v1/imports`) and `SettingsService` (`/api/v1/settings/llm`). Nothing
-  becomes an item until a candidate is approved. API keys are never entered or shown in the app: the
+- Imports: `ImportsService` (`/api/v1/imports`) and `SettingsService` (`/api/v1/settings/llm`). Imports
+  save their questions at once; the page only lists them with the completed checkbox. API keys are never entered or shown in the app: the
   settings page only says whether `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` is set on the server.
 
 ## Checks
