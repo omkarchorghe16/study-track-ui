@@ -7,13 +7,14 @@ import { CatalogService } from '../../core/services/catalog.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UsersService } from '../../core/services/users.service';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
+import { CatalogExplanationsComponent } from './catalog-explanations.component';
 import { CatalogImportComponent } from './catalog-import.component';
 
 /** Browse the shared catalog (track, subject, topics) and add a subject, with its topics, to your own. */
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [ShellComponent, RouterLink, NgTemplateOutlet, CatalogImportComponent],
+  imports: [ShellComponent, RouterLink, NgTemplateOutlet, CatalogImportComponent, CatalogExplanationsComponent],
   template: `
     <app-shell>
       <section class="page-shell">
@@ -106,6 +107,7 @@ import { CatalogImportComponent } from './catalog-import.component';
 
         @if (isAdmin()) {
           <app-catalog-import (imported)="loadTracks()"></app-catalog-import>
+          <app-catalog-explanations></app-catalog-explanations>
         }
       </section>
     </app-shell>

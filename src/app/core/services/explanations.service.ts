@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, of, throwError } from 'rxjs';
-import { Explanation } from '../models/explanation.models';
+import { Explanation, PrefillStatus } from '../models/explanation.models';
 
 /**
  * The AI explanation of a question. It is saved once on the server and shared by all users; the server calls the AI
@@ -26,5 +26,15 @@ export class ExplanationsService {
   /** Admin only: removes the saved explanation so the next findOrCreateExplanation writes a new one. */
   deleteExplanation(questionId: number): Observable<void> {
     return this.http.delete<void>(`/api/v1/items/${questionId}/explanation`);
+  }
+
+  /** Admin only: starts writing the missing explanations of the catalog's questions in the background. */
+  startCatalogPrefill(): Observable<PrefillStatus> {
+    return this.http.post<PrefillStatus>('/api/v1/admin/catalog/explanations/prefill', null);
+  }
+
+  /** Admin only: progress of the catalog pre-fill. */
+  getCatalogPrefillStatus(): Observable<PrefillStatus> {
+    return this.http.get<PrefillStatus>('/api/v1/admin/catalog/explanations/status');
   }
 }

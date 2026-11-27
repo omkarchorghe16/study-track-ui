@@ -37,3 +37,20 @@ export interface Explanation {
   model: string;
   updatedAt: string;
 }
+
+export type PrefillState = 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+/** Progress of the admin's one-off pre-fill of the catalog questions' explanations. */
+export interface PrefillStatus {
+  state: PrefillState;
+  /** Questions this run set out to write. */
+  total: number;
+  completed: number;
+  failed: number;
+  /** Catalog questions that still have no saved explanation. */
+  missing: number;
+  /** All catalog questions. */
+  questions: number;
+  /** Why the run stopped, when FAILED. */
+  message?: string;
+}
