@@ -33,3 +33,13 @@ export function altTextFor(file: File): string {
 export function parseTags(text: string): string[] {
   return [...new Set(text.split(',').map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length > 0))];
 }
+
+/** Plain text typed in a simple field as stored HTML: blank lines start paragraphs, single line breaks become <br>. */
+export function plainTextToHtml(text: string): string | null {
+  const paragraphs = text.replace(/\r\n/g, '\n').split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter((paragraph) => paragraph.length > 0);
+  if (paragraphs.length === 0) {
+    return null;
+  }
+  const escape = (value: string): string => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return paragraphs.map((paragraph) => `<p>${paragraph.split('\n').map(escape).join('<br>')}</p>`).join('');
+}

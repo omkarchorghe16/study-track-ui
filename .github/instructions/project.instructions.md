@@ -36,6 +36,7 @@ dev-standards) also apply; where this file is more specific, it wins. Edit this 
 - Rich text uses ngx-quill (`format="html"` with the editor's `valueGetter`, see `ItemEditorComponent`).
   Quill's theme CSS is a global style in `angular.json`; `quill-delta` is an allowed CommonJS dependency.
 - The catalog (`features/catalog`, `CatalogService`) is shared and read-only for users; only the panel shown when `UsersService.getCurrentUser()` says `admin` may upload a CSV. Never hide an admin-only action by UI alone: the API answers 403 and the message is shown.
+- Popups on the subject page: add one question (`QuickQuestionDialogComponent`, plain text only) and import a CSV (`QuestionsCsvDialogComponent`, polls the import job like the import page and stops when it finishes or the dialog closes). Keep rich text, images and code in `ItemEditorComponent`.
 - Reference pages: `SubjectsComponent` (list + dialog), `SubjectDetailComponent` (two panes, selection
   in the query string), `ItemEditorComponent` (form with editors).
 - Show progress with `ProgressBarComponent` (role `progressbar`, labelled). Item status uses the global

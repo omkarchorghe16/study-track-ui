@@ -8,6 +8,8 @@
       </div>
       @if (subject(); as current) {
         <div class="actions-row header-actions">
+          <button type="button" class="btn btn-primary" (click)="openQuickQuestion()">＋ Add question</button>
+          <button type="button" class="btn" (click)="csvDialogOpen.set(true)">Import CSV</button>
           @if (current.itemCount) {
             <a class="btn btn-primary" [routerLink]="['/study', current.id]">Study flashcards</a>
           }
@@ -177,6 +179,10 @@
     </div>
   </section>
 
+  <app-quick-question-dialog [open]="quickQuestionOpen()" [tree]="tree()" [initialTopicId]="selectedTopic()?.id ?? null"
+                             (saved)="onQuestionSaved()" (closed)="quickQuestionOpen.set(false)"></app-quick-question-dialog>
+  <app-questions-csv-dialog [open]="csvDialogOpen()" [subjectId]="id()" (imported)="onQuestionsImported($event)"
+                            (closed)="csvDialogOpen.set(false)"></app-questions-csv-dialog>
   <app-topic-dialog [open]="topicDialogOpen()" [subjectId]="id()" [tree]="tree()" [topic]="editingTopic()"
                     [initialParentId]="newTopicParentId()" (saved)="onTopicSaved($event.id)" (closed)="topicDialogOpen.set(false)"></app-topic-dialog>
   <app-confirm-dialog [open]="!!deletingTopic()" heading="Delete topic?" [message]="deleteTopicMessage()" [busy]="deleteBusy()"

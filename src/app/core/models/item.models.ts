@@ -45,7 +45,7 @@ export interface StudyItem {
   answerHtml?: string;
   notesHtml?: string;
   difficulty: Difficulty;
-  source: 'MANUAL' | 'IMPORT';
+  source: 'MANUAL' | 'IMPORT' | 'CATALOG';
   tags: string[];
   sortOrder: number;
   previousItemId?: number;

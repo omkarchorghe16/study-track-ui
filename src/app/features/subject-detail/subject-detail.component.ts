@@ -5,6 +5,7 @@ import {
   DIFFICULTIES, Difficulty, ITEM_STATUSES, ItemPage, ItemStatus, ItemSummary, StudyItem, difficultyLabel, itemStatusLabel,
   itemTypeLabel,
 } from '../../core/models/item.models';
+import { ImportJob } from '../../core/models/import.models';
 import { Subject } from '../../core/models/subject.models';
 import { TopicNode, findTopicNode, flattenTopics } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
@@ -18,6 +19,8 @@ import { ProgressBarComponent } from '../../shared/components/progress-bar/progr
 import { RichContentComponent } from '../../shared/components/rich-content/rich-content.component';
 import { ShellComponent } from '../../shared/components/shell/shell.component';
 import { TopicTreeComponent } from '../../shared/components/topic-tree/topic-tree.component';
+import { QuestionsCsvDialogComponent } from './questions-csv-dialog.component';
+import { QuickQuestionDialogComponent } from './quick-question-dialog.component';
 import { TopicDialogComponent } from './topic-dialog.component';
 
 const PAGE_SIZE = 20;
@@ -35,7 +38,7 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [
     ShellComponent, RouterLink, FormsModule, TopicTreeComponent, TopicDialogComponent, ConfirmDialogComponent,
-    ProgressBarComponent, RichContentComponent,
+    ProgressBarComponent, RichContentComponent, QuickQuestionDialogComponent, QuestionsCsvDialogComponent,
   ],
   templateUrl: './subject-detail.component.html',
   styleUrl: './subject-detail.component.scss',
@@ -95,6 +98,8 @@ export class SubjectDetailComponent {
   protected readonly savingCompletion = signal<ReadonlySet<number>>(new Set());
   protected readonly confirmingSubjectDelete = signal(false);
 
+  protected readonly quickQuestionOpen = signal(false);
+  protected readonly csvDialogOpen = signal(false);
   protected readonly topicDialogOpen = signal(false);
   protected readonly editingTopic = signal<TopicNode | null>(null);
   protected readonly newTopicParentId = signal<number | null>(null);
@@ -271,6 +276,33 @@ export class SubjectDetailComponent {
     return subject
       ? `“${subject.name}”, its ${subject.topicCount} topics and ${subject.itemCount} items will be deleted. This cannot be undone.`
       : '';
+  }
+
+  // ---- Add questions ----
+
+  protected openQuickQuestion(): void {
+    this.quickQuestionOpen.set(true);
+  }
+
+  /** The dialog may stay open for another question, so only the lists are refreshed here. */
+  protected onQuestionSaved(): void {
+    this.toastService.showSuccess('Question added.');
+    this.refreshAfterNewQuestions();
+  }
+
+  protected onQuestionsImported(job: ImportJob): void {
+    if (job.status === 'COMPLETED') {
+      this.toastService.showSuccess(`${job.candidates.approved} questions imported.`);
+    } else {
+      this.toastService.showError('The CSV import did not finish.');
+    }
+    this.refreshAfterNewQuestions();
+  }
+
+  private refreshAfterNewQuestions(): void {
+    this.reloadTree();
+    this.loadSubject(this.id(), false);
+    this.loadItems(this.selectedTopic());
   }
 
   // ---- Topic dialog ----
