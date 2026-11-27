@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -11,6 +11,7 @@ import { TopicNode, findTopicNode } from '../../core/models/topic.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { ItemsService } from '../../core/services/items.service';
 import { ProgressService } from '../../core/services/progress.service';
+import { SpeechService } from '../../core/services/speech.service';
 import { SubjectsService } from '../../core/services/subjects.service';
 import { TopicsService } from '../../core/services/topics.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -50,6 +51,7 @@ export class SubjectDetailComponent {
   private readonly itemsService = inject(ItemsService);
   private readonly progressService = inject(ProgressService);
   private readonly router = inject(Router);
+  protected readonly speechService = inject(SpeechService);
 
   /** Route parameter :id. */
   readonly id = input.required({ transform: numberAttribute });
@@ -107,6 +109,7 @@ export class SubjectDetailComponent {
   protected readonly deleteError = signal<string | null>(null);
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.speechService.stop());
     effect(() => {
       const subjectId = this.id();
       untracked(() => this.loadSubject(subjectId));
@@ -166,6 +169,7 @@ export class SubjectDetailComponent {
   // ---- Question and answer in place ----
 
   protected toggleItem(item: ItemSummary): void {
+    this.speechService.stop();
     if (this.expandedItemId() === item.id) {
       this.expandedItemId.set(null);
       return;
@@ -179,6 +183,16 @@ export class SubjectDetailComponent {
       next: (detail) => this.itemDetails.update((details) => new Map(details).set(detail.id, detail)),
       error: (error: unknown) => this.detailError.set(apiErrorMessage(error, 'Could not load the answer.')),
     });
+  }
+
+  /** Starts reading the item's answer aloud, or stops it when this answer is already being read. */
+  protected toggleListen(item: StudyItem): void {
+    const key = `answer-${item.id}`;
+    if (this.speechService.speakingKey() === key) {
+      this.speechService.stop();
+    } else {
+      this.speechService.speakHtml(key, item.answerHtml);
+    }
   }
 
   /** Ticked: the user went through the question, saved as DONE; unticked: back to NOT_STARTED. */

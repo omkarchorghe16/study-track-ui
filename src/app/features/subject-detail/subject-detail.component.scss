@@ -13,7 +13,7 @@
 .chevron{color:var(--muted);width:.8em;flex:none}
 .item-badges{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex:none;margin-top:1px;font-size:.72rem;color:var(--muted)}
 .delete-btn{flex:none;margin-left:auto;margin-top:-3px}.delete-btn:hover{color:var(--negative-text);background:#eb707b1c}
-.answer{margin-top:10px;padding:10px 14px;border-radius:7px;background:var(--sunken);min-width:0}
+.answer{position:relative;margin-top:10px;padding:10px 44px 10px 14px;border-radius:7px;background:var(--sunken);min-width:0}
 .answer h3{margin:8px 0 4px;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
 .all-items{display:block;width:100%;margin-bottom:10px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:none;color:var(--text);font-size:.82rem;text-align:left;cursor:pointer}
 .all-items:hover{border-color:var(--accent)}.all-items.selected{border-color:var(--accent);color:var(--accent);font-weight:600}
@@ -26,3 +26,4 @@
 .pane-header .actions-row{margin:0}
 .bookmark{color:var(--warning-text);margin-right:2px}
 .empty-actions{justify-content:center}
+.listen-btn{position:absolute;top:8px;right:8px}.listen-btn.playing{color:var(--accent);background:var(--overlay-1)}

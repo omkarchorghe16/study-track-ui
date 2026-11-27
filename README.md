@@ -44,6 +44,7 @@ Start `study-track-api` first (see its README). If it is not running, pages say
 
 ## Notes
 
+- Listen to an answer: the speaker icon in an expanded answer reads it aloud with the browser's own text-to-speech (`SpeechService`, Web Speech API: free, nothing is sent anywhere; code blocks are skipped and the icon is hidden in browsers without speech). Starting another answer, collapsing or leaving the page stops it. `shared/util/speech-text.ts` turns the HTML into speakable pieces.
 - Subject page popups: `QuickQuestionDialogComponent` (one plain-text question, saved as HTML with `plainTextToHtml`; the full editor is still the way to add formatting, code or images) and `QuestionsCsvDialogComponent` (uses `ImportsService`: the CSV import needs no LLM and saves at once; the sample file is generated in the browser by `downloadTextFile`).
 - Catalog: `CatalogService` (`/api/v1/catalog`, admin import) and `UsersService` (`/users/me`, the `admin` flag that shows the import panel). The catalog holds topics and starter questions (copied with source `CATALOG`); a copy made with "Add to my subjects" is independent of later catalog changes. The seed data is in the API repository (`src/main/resources/catalog/*.csv`).
 - Progress: `ProgressService` (item progress, topic completion, reviews, due cards, resume point) and
