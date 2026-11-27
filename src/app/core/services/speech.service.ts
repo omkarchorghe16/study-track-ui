@@ -11,18 +11,23 @@ export class SpeechService {
   readonly supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   private readonly speakingKeyState = signal<string | null>(null);
-  /** The key given to {@link speakHtml} for what is being read now, or null. */
+  /** The key given to {@link speakText} for what is being read now, or null. */
   readonly speakingKey = this.speakingKeyState.asReadonly();
   /** Incremented on every start and stop, so callbacks of an older reading know they are out of date. */
   private runId = 0;
 
   /** Reads the visible words of the HTML aloud, replacing anything being read. */
   speakHtml(key: string, html: string | null | undefined): void {
+    this.speakText(key, htmlToSpeakableText(html));
+  }
+
+  /** Reads plain text aloud, replacing anything being read. */
+  speakText(key: string, text: string): void {
     this.stop();
     if (!this.supported) {
       return;
     }
-    const chunks = splitIntoSpeechChunks(htmlToSpeakableText(html));
+    const chunks = splitIntoSpeechChunks(text);
     if (chunks.length === 0) {
       return;
     }

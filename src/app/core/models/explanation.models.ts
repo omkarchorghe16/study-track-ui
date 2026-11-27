@@ -37,17 +37,3 @@ export interface Explanation {
   model: string;
   updatedAt: string;
 }
-
-export type ExplanationBatchState = 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-
-/** Progress of the background run that explains every question of a subject. */
-export interface ExplanationBatch {
-  state: ExplanationBatchState;
-  total: number;
-  completed: number;
-  failed: number;
-  /** Questions of the subject that still have no explanation. */
-  missing: number;
-  /** Why the run stopped, when FAILED. */
-  message?: string;
-}

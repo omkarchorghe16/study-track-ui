@@ -10,12 +10,6 @@
         <div class="actions-row header-actions">
           <button type="button" class="btn btn-primary" (click)="openQuickQuestion()">＋ Add question</button>
           <button type="button" class="btn" (click)="csvDialogOpen.set(true)">Import CSV</button>
-          @if (batch(); as run) {
-            <button type="button" class="btn" [disabled]="run.state === 'RUNNING' || run.missing === 0" (click)="explainAll()"
-                    title="Writes a detailed explanation, examples and a real-world case for every question that has none">
-              <span aria-hidden="true">✨</span> {{ run.state === 'RUNNING' ? 'Explaining…' : run.missing === 0 ? 'All explained' : 'Explain all with AI (' + run.missing + ')' }}
-            </button>
-          }
           @if (current.itemCount) {
             <a class="btn btn-primary" [routerLink]="['/study', current.id]">Study flashcards</a>
           }
@@ -29,21 +23,6 @@
         <p class="text-muted">{{ current.doneItemCount }} of {{ current.itemCount }} items done ({{ current.percentDone }}%) ·
           {{ current.learningItemCount }} learning · {{ current.completedTopicCount }} of {{ current.topicCount }} topics complete</p>
       </div>
-    }
-
-    @if (batch(); as run) {
-      @if (run.state === 'RUNNING' || run.state === 'FAILED' || (run.state === 'COMPLETED' && run.total > 0)) {
-        <p class="batch-note" [class.batch-error]="run.state === 'FAILED'" [attr.role]="run.state === 'FAILED' ? 'alert' : 'status'">
-          @if (run.state === 'RUNNING') {
-            <span aria-hidden="true">✨</span> Writing explanations in the background: {{ run.completed + run.failed }} of {{ run.total }} done{{ run.failed ? ' (' + run.failed + ' failed)' : '' }}.
-            You can keep studying.
-          } @else if (run.state === 'FAILED') {
-            Explanations stopped: {{ run.message }}
-          } @else {
-            Explanations finished: {{ run.completed }} written{{ run.failed ? ', ' + run.failed + ' failed' : '' }}.
-          }
-        </p>
-      }
     }
 
     @if (loadError()) {
@@ -183,7 +162,7 @@
                           </button>
                         }
                         <app-rich-content [html]="detail.answerHtml"></app-rich-content>
-                        <app-explanation-panel [itemId]="item.id" [reloadKey]="explanationReload()"></app-explanation-panel>
+                        <app-explanation-panel [itemId]="item.id" (loaded)="onExplanationLoaded(item.id, $event)"></app-explanation-panel>
                         @if (detail.notesHtml) { <h3>Notes</h3><app-rich-content [html]="detail.notesHtml"></app-rich-content> }
                       } @else if (detailError()) {
                         <p class="form-error" role="alert">{{ detailError() }}</p>
