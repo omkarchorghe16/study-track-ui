@@ -53,6 +53,7 @@ export class ShellComponent {
   protected readonly links: readonly NavLink[] = [
     { path: '/dashboard', label: 'Dashboard', icon: '⌂' },
     { path: '/subjects', label: 'Subjects', icon: '☰' },
+    { path: '/catalog', label: 'Catalog', icon: '▤' },
     { path: '/import', label: 'Import', icon: '⇪' },
     { path: '/search', label: 'Search', icon: '⌕' },
     { path: '/settings', label: 'Settings', icon: '⚙' },

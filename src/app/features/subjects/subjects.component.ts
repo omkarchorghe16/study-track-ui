@@ -22,7 +22,10 @@ import { SubjectDialogComponent } from './subject-dialog.component';
             <h1>Subjects</h1>
             <p>Courses and prep tracks. Click a subject to see all its questions and answers.</p>
           </div>
-          <button type="button" class="btn btn-primary" (click)="openCreate()">＋ New subject</button>
+          <div class="actions-row">
+            <a class="btn" routerLink="/catalog">Browse catalog</a>
+            <button type="button" class="btn btn-primary" (click)="openCreate()">＋ New subject</button>
+          </div>
         </header>
 
         @if (loadError()) {
@@ -33,7 +36,8 @@ import { SubjectDialogComponent } from './subject-dialog.component';
         } @else if (!loadError() && subjects().length === 0) {
           <div class="card empty-state">
             <p>No subjects yet. Create one for each course or interview track you are preparing.</p>
-            <button type="button" class="btn btn-primary" (click)="openCreate()">Create your first subject</button>
+            <a class="btn btn-primary" routerLink="/catalog">Pick from the catalog</a>
+            <button type="button" class="btn" (click)="openCreate()">Create your own subject</button>
           </div>
         } @else {
           <ul class="subject-grid">

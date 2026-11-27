@@ -21,6 +21,11 @@ export const routes: Routes = [
     title: 'Subject · StudyTrack',
   },
   {
+    path: 'catalog',
+    loadComponent: () => import('./features/catalog/catalog.component').then((module) => module.CatalogComponent),
+    title: 'Catalog · StudyTrack',
+  },
+  {
     path: 'items/new',
     loadComponent: () => import('./features/item-editor/item-editor.component').then((module) => module.ItemEditorComponent),
     title: 'New item · StudyTrack',
