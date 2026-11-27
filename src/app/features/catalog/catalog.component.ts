@@ -20,7 +20,7 @@ import { CatalogImportComponent } from './catalog-import.component';
         <header class="page-header">
           <div>
             <h1>Catalog</h1>
-            <p>Pick a track, preview its subjects and topics, and add the ones you want to study to your subjects.</p>
+            <p>Pick a track, preview its subjects and topics, and add the ones you want to study to your subjects. Starter questions and answers come with them.</p>
           </div>
         </header>
 
@@ -50,7 +50,7 @@ import { CatalogImportComponent } from './catalog-import.component';
               @for (subject of subjects(); track subject.id) {
                 <li class="card subject-card" [class.previewing]="subject.id === previewId()">
                   <span class="subject-name"><span aria-hidden="true">{{ subject.icon || '📘' }}</span> {{ subject.name }}</span>
-                  <p class="subject-counts">{{ subject.topicCount }} topics</p>
+                  <p class="subject-counts">{{ subject.topicCount }} topics · {{ subject.questionCount }} questions</p>
                   <div class="actions-row">
                     <button type="button" class="btn btn-small" [attr.aria-expanded]="subject.id === previewId()"
                             [attr.aria-label]="(subject.id === previewId() ? 'Hide topics of ' : 'Preview topics of ') + subject.name"
@@ -206,7 +206,7 @@ export class CatalogComponent {
     this.catalogService.enrollInSubject(subject.id).subscribe({
       next: (added) => {
         this.enrollingId.set(null);
-        this.toastService.showSuccess(`“${added.name}” added with ${added.topicCount} topics.`);
+        this.toastService.showSuccess(`“${added.name}” added with ${added.topicCount} topics and ${added.itemCount} questions.`);
         this.subjects.update((subjects) => subjects.map((each) => (each.id === subject.id ? { ...each, copiedSubjectId: added.id } : each)));
       },
       error: (error: unknown) => {

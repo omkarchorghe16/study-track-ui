@@ -13,6 +13,8 @@ export interface CatalogSubject {
   description?: string;
   icon?: string;
   topicCount: number;
+  /** Starter questions with answers that are copied together with the topics. */
+  questionCount: number;
   /** Id of the user's own subject when it was already added, else missing. */
   copiedSubjectId?: number;
 }
@@ -29,6 +31,7 @@ export interface CatalogImportResult {
   tracksAdded: number;
   subjectsAdded: number;
   topicsAdded: number;
+  questionsAdded: number;
   rejectedRowCount: number;
   /** The first rejected rows as "Line n: reason". */
   rejectedRows: string[];

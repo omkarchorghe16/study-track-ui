@@ -15,7 +15,8 @@ const MAX_FILE_BYTES = 20 * 1024 * 1024;
       <h2 id="catalog-import-heading">Import catalog from CSV</h2>
       <p class="text-muted">
         Columns: <code>track</code>, <code>subject</code>, <code>topic_path</code> (levels separated by <code>&gt;</code>,
-        for example <code>Collections &gt; HashMap</code>). Adds what is missing; nothing is changed or deleted.
+        for example <code>Collections &gt; HashMap</code>) and optionally <code>question</code>, <code>answer</code>, <code>difficulty</code>.
+        Adds what is missing; nothing is changed or deleted.
         <a [href]="templateUrl" download="catalog-template.csv">Download a sample CSV</a>
       </p>
       <label class="field"><span>CSV file</span>
@@ -27,8 +28,8 @@ const MAX_FILE_BYTES = 20 * 1024 * 1024;
       <button type="button" class="btn btn-primary" [disabled]="!file() || busy()" (click)="upload()">{{ busy() ? 'Importing…' : 'Import' }}</button>
       @if (result(); as summary) {
         <div class="result" role="status">
-          <p><b>{{ summary.rowsRead }}</b> rows read: <b>{{ summary.tracksAdded }}</b> tracks, <b>{{ summary.subjectsAdded }}</b> subjects and
-            <b>{{ summary.topicsAdded }}</b> topics added.</p>
+          <p><b>{{ summary.rowsRead }}</b> rows read: <b>{{ summary.tracksAdded }}</b> tracks, <b>{{ summary.subjectsAdded }}</b> subjects,
+            <b>{{ summary.topicsAdded }}</b> topics and <b>{{ summary.questionsAdded }}</b> questions added.</p>
           @if (summary.rejectedRowCount) {
             <p>{{ summary.rejectedRowCount }} rows were skipped{{ summary.rejectedRows.length < summary.rejectedRowCount ? ' (first ' + summary.rejectedRows.length + ' shown)' : '' }}:</p>
             <ul>@for (row of summary.rejectedRows; track row) { <li>{{ row }}</li> }</ul>

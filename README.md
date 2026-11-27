@@ -20,7 +20,7 @@ Phase 7 (accounts and deployment) is not started.
 | Route | Screen | State |
 |---|---|---|
 | `/dashboard` (also `/`) | Overall progress ring, "Continue where you left off", today's due and new cards with the streak, progress per subject, 30-day review chart (`GET /api/v1/stats/overview`, `GET /api/v1/sessions/resume`) | live |
-| `/catalog` | Shared catalog: pick a track (Full-Stack Java, Python, Angular, React, …), see its subjects with topic counts, preview the topic tree, and "Add to my subjects" (copies the subject and all its topics; shows "Added · Open" afterwards). Admins also get "Import catalog from CSV" (`track,subject,topic_path`, sample download, result with skipped rows) (`GET /api/v1/catalog/*`, `POST /api/v1/catalog/subjects/{id}/enroll`, `POST /api/v1/admin/catalog/import`, `GET /api/v1/users/me`) | live |
+| `/catalog` | Shared catalog: pick a track (Full-Stack Java, Python, Angular, React, …), see its subjects with topic and question counts, preview the topic tree, and "Add to my subjects" (copies the subject, all its topics and the starter questions with answers; shows "Added · Open" afterwards). Admins also get "Import catalog from CSV" (`track,subject,topic_path` and optionally `question,answer,difficulty`, sample download, result with skipped rows) (`GET /api/v1/catalog/*`, `POST /api/v1/catalog/subjects/{id}/enroll`, `POST /api/v1/admin/catalog/import`, `GET /api/v1/users/me`) | live |
 | `/subjects` | Subject cards (icon, description, counts, progress bar, Study link) with create, edit, archive and delete; click anywhere on a card to open the subject | live |
 | `/subjects/:id?topic=` | Subject progress; topic tree with % and check marks (add, rename, move, delete topics); "All questions" (every item of the subject, with its topic) when no topic is selected, otherwise the selected topic's items; status, difficulty and tag filters, 20 per page; a checkbox per question marks it completed (`DONE`, unticked by default; progress bars follow); click a question to show its answer in place; delete a question or the whole subject (with confirmation); "Mark topic complete" | live |
 | `/items/:id` | Reading view: status (Not started / Learning / Done), confidence stars, bookmark, question, answer, notes, tags, previous/next in the topic, edit and delete. Opening it saves the resume point | live |
@@ -44,7 +44,7 @@ Start `study-track-api` first (see its README). If it is not running, pages say
 
 ## Notes
 
-- Catalog: `CatalogService` (`/api/v1/catalog`, admin import) and `UsersService` (`/users/me`, the `admin` flag that shows the import panel). The catalog holds topics only; a copy made with "Add to my subjects" is independent of later catalog changes. The seed data is in the API repository (`src/main/resources/catalog/*.csv`).
+- Catalog: `CatalogService` (`/api/v1/catalog`, admin import) and `UsersService` (`/users/me`, the `admin` flag that shows the import panel). The catalog holds topics and starter questions (copied with source `CATALOG`); a copy made with "Add to my subjects" is independent of later catalog changes. The seed data is in the API repository (`src/main/resources/catalog/*.csv`).
 - Progress: `ProgressService` (item progress, topic completion, reviews, due cards, resume point) and
   `StatsService` (dashboard numbers). The rating buttons show the next interval with
   `reviewIntervalDays` (`core/models/progress.models.ts`), which mirrors the API's `ReviewScheduler`;
