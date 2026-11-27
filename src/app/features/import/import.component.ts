@@ -3,7 +3,7 @@ import { Component, DestroyRef, computed, effect, inject, input, signal, untrack
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription, forkJoin, switchMap, takeWhile, timer } from 'rxjs';
+import { Observable, Subscription, forkJoin, of, switchMap, takeWhile, tap, timer } from 'rxjs';
 import {
   CandidateSelectionRequest, IMPORT_EXTENSIONS, IMPORT_STATUS_LABELS, ImportCandidate, ImportJob, MAX_IMPORT_BYTES,
   isCandidateOpen, isImportRunning,
@@ -52,7 +52,8 @@ export class ImportComponent {
   protected readonly subjects = signal<Subject[]>([]);
   protected readonly recentImports = signal<ImportJob[]>([]);
   protected readonly loadError = signal<string | null>(null);
-  protected selectedSubjectId: number | null = null;
+  /** Subject field text: an existing subject's name, or a new name that is created when the import starts. */
+  protected readonly subjectText = signal('');
   protected readonly selectedFile = signal<File | null>(null);
   protected readonly fileError = signal<string | null>(null);
   protected readonly starting = signal(false);
@@ -81,6 +82,13 @@ export class ImportComponent {
     this.openCandidates().filter((candidate) => this.selectedIds().has(candidate.id)).map((candidate) => candidate.id));
   protected readonly allSelected = computed(() =>
     this.openCandidates().length > 0 && this.selectedOpenIds().length === this.openCandidates().length);
+  protected readonly activeSubjects = computed(() => this.subjects().filter((subject) => !subject.archived));
+  protected readonly typedSubjectName = computed(() => this.subjectText().trim());
+  /** The active subject whose name matches the field (ignoring case), or null when the name is new. */
+  protected readonly matchedSubject = computed(() => {
+    const name = this.typedSubjectName().toLowerCase();
+    return name ? this.activeSubjects().find((subject) => subject.name.trim().toLowerCase() === name) ?? null : null;
+  });
   protected readonly subjectName = computed(() => {
     const job = this.currentJob();
     return job ? this.subjects().find((subject) => subject.id === job.subjectId)?.name ?? '—' : '—';
@@ -120,13 +128,16 @@ export class ImportComponent {
 
   protected startImport(): void {
     const file = this.selectedFile();
-    if (!file || this.selectedSubjectId === null || this.starting()) {
-      this.startError.set(this.selectedSubjectId === null ? 'Choose a subject.' : 'Choose a file.');
+    const name = this.typedSubjectName();
+    if (!file || !name || this.starting()) {
+      this.startError.set(!name ? 'Choose or type a subject.' : 'Choose a file.');
       return;
     }
     this.starting.set(true);
     this.startError.set(null);
-    this.importsService.startImport(file, this.selectedSubjectId).subscribe({
+    this.subjectForImport(name).pipe(
+      switchMap((subject) => this.importsService.startImport(file, subject.id)),
+    ).subscribe({
       next: (job) => {
         this.starting.set(false);
         this.selectedFile.set(null);
@@ -139,15 +150,29 @@ export class ImportComponent {
     });
   }
 
+  /** The matching subject, or a new subject with this name (kept in the list so a retry reuses it). */
+  private subjectForImport(name: string): Observable<Subject> {
+    const existing = this.matchedSubject();
+    if (existing) {
+      return of(existing);
+    }
+    return this.subjectsService.createSubject({ name }).pipe(
+      tap((created) => {
+        this.subjects.update((list) => [...list, created]);
+        this.toastService.showSuccess(`Created subject “${created.name}”.`);
+      }),
+    );
+  }
+
   protected loadStartData(): void {
     this.loadError.set(null);
     forkJoin({ subjects: this.subjectsService.listSubjects(), imports: this.importsService.listImports(10) }).subscribe({
       next: ({ subjects, imports }) => {
         this.subjects.set(subjects);
         this.recentImports.set(imports);
-        const active = subjects.filter((subject) => !subject.archived);
-        if (this.selectedSubjectId === null && active.length === 1) {
-          this.selectedSubjectId = active[0].id;
+        const active = this.activeSubjects();
+        if (!this.subjectText() && active.length === 1) {
+          this.subjectText.set(active[0].name);
         }
       },
       error: (error: unknown) => this.loadError.set(apiErrorMessage(error, 'Could not load your subjects and imports.')),

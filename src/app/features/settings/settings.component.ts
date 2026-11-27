@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LLM_PROVIDER_LABELS, LlmConnectionTest, LlmProvider, LlmProviderInfo, LlmSettingsRequest } from '../../core/models/llm-settings.models';
+import { LLM_API_KEY_VARIABLES, LLM_PROVIDER_LABELS, LlmConnectionTest, LlmProvider, LlmProviderInfo, LlmSettingsRequest } from '../../core/models/llm-settings.models';
 import { apiErrorMessage } from '../../core/services/api-error';
 import { SettingsService } from '../../core/services/settings.service';
 import { THEME_MODES, ThemeService } from '../../core/services/theme.service';
@@ -55,7 +55,7 @@ import { ShellComponent } from '../../shared/components/shell/shell.component';
               } @else if (providerInfo()?.apiKeyConfigured) {
                 API key is set on the server.
               } @else {
-                No API key on the server. Set {{ provider() === 'OPENAI' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY' }} in the API's environment or .env, then restart it.
+                No API key on the server. Set {{ apiKeyVariables[provider()] }} in the API's environment or .env, then restart it.
               }
             </p>
             <label class="check"><input type="checkbox" name="enabled" [(ngModel)]="enabled"> Imports enabled</label>
@@ -100,6 +100,7 @@ export class SettingsComponent {
   protected readonly themeModes = THEME_MODES;
 
   protected readonly providerLabels = LLM_PROVIDER_LABELS;
+  protected readonly apiKeyVariables = LLM_API_KEY_VARIABLES;
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly providers = signal<LlmProviderInfo[]>([]);

@@ -21,12 +21,16 @@
         @if (startError()) { <p class="form-error" role="alert">{{ startError() }}</p> }
         <div class="field-row">
           <label class="field"><span>Subject</span>
-            <select name="subject" [(ngModel)]="selectedSubjectId" required>
-              <option [ngValue]="null" disabled>Choose a subject</option>
-              @for (subject of subjects(); track subject.id) {
-                @if (!subject.archived) { <option [ngValue]="subject.id">{{ subject.name }}</option> }
-              }
-            </select>
+            <input type="text" name="subject" list="subject-options" autocomplete="off" required maxlength="120"
+                   placeholder="Choose or type a subject" [ngModel]="subjectText()" (ngModelChange)="subjectText.set($event)"
+                   aria-describedby="subject-hint">
+            <datalist id="subject-options">
+              @for (subject of activeSubjects(); track subject.id) { <option [value]="subject.name"></option> }
+            </datalist>
+            <span class="field-hint" id="subject-hint" aria-live="polite">
+              @if (typedSubjectName() && !matchedSubject()) { A new subject “{{ typedSubjectName() }}” will be created. }
+              @else { Pick from the list or type a new name. }
+            </span>
           </label>
           <label class="field"><span>File</span>
             <input type="file" name="file" [accept]="acceptedTypes" (change)="chooseFile($event)" aria-describedby="file-hint">
@@ -34,11 +38,8 @@
           </label>
         </div>
         @if (fileError()) { <p class="form-error" role="alert">{{ fileError() }}</p> }
-        @if (subjects().length === 0 && !loadError()) {
-          <p class="text-muted">Create a subject first on the <a class="link" routerLink="/subjects">Subjects</a> page.</p>
-        }
         <div class="actions-row">
-          <button type="submit" class="btn btn-primary" [disabled]="starting() || !selectedFile() || selectedSubjectId === null">
+          <button type="submit" class="btn btn-primary" [disabled]="starting() || !selectedFile() || !typedSubjectName()">
             {{ starting() ? 'Uploading…' : 'Start import' }}
           </button>
         </div>
